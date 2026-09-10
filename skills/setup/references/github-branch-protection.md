@@ -45,10 +45,12 @@ already has the pieces for:
   slow integration/e2e suite with a history of unrelated intermittent
   failures) — required-but-unreliable is worse than not-required, because
   it trains people to override the gate instead of trusting it.
-- **Never require a workflow that can be skipped.** GitHub keeps a skipped
-  required check "Pending", which blocks the merge. The Renovate config
-  validator workflow is the case at hand: it is path-filtered on the config
-  file, so requiring it would block every dependency PR forever.
+- **Never require a check that does not run on every PR.** GitHub keeps a
+  missing required check "Pending", which blocks the merge. Two cases at
+  hand: the Renovate config validator workflow, path-filtered on the config
+  file, so requiring it would block every dependency PR forever, and
+  `renovate/stability-days`, Renovate's own release-age check, which shows
+  up in the list of checks of a MintMaker PR but never on a human's PR.
 - **This is a per-repo call.** Which workflows exist, which are trustworthy
   signal, and which are known-flaky varies per repo — scan
   `.github/workflows/` for candidates and ask the user rather than guessing
