@@ -2,6 +2,7 @@
 name: setup
 description: Turns on Renovate automerge for low-risk dependency updates in a Konflux-onboarded repository, one decision at a time, and documents the GitHub branch-protection changes it needs. Run it from the repository with /mintmaker-automerge:setup.
 disable-model-invocation: true
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/detect.sh)
 ---
 
 # Renovate automerge setup
@@ -54,7 +55,7 @@ this skill loaded. It is read-only and looks at tracked files only. Steps 1
 to 7 read from this report instead of scanning again; do the checks by hand
 only where the report is missing or incomplete.
 
-!`bash "${CLAUDE_SKILL_DIR}/scripts/detect.sh"`
+!`"${CLAUDE_SKILL_DIR}/scripts/detect.sh"`
 
 ## Step 1: Confirm the repo is Konflux-onboarded
 
