@@ -382,8 +382,9 @@ the user through its three parts:
    without it the `tekton` block automerges untested. Advise against
    requiring checks that are flaky, that fail for reasons outside the PR's
    diff (a CVE-scanning workflow is the classic case), or that do not run
-   on every PR, starting with the Renovate config validator from Step 7.
-   The reference explains each case.
+   on every PR: the Renovate config validator from Step 7, and
+   `renovate/stability-days`, which the command above lists because it
+   exists on Renovate PRs only. The reference explains each case.
 2. **The Konflux bypass** — letting the Konflux app found above skip the
    required-approval rule specifically (not required status checks, which
    should still apply to it). Recommend the "For pull requests only" bypass
