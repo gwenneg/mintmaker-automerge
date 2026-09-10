@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mintmaker-automerge",
+  "displayName": "MintMaker Automerge",
+  "description": "Sets up or migrates a Konflux-onboarded repo's Renovate config to automerge low-risk dependency updates: vetted patch/minor bumps per ecosystem, an explicit allow-list for GitHub Actions, manual-review carve-outs for known-risky packages, and the GitHub branch-protection changes (required status checks, the Konflux app bypass) needed for it to take effect. Scoped to Konflux/MintMaker.",
+  "author": {
+    "name": "Gwenneg Lepage",
+    "url": "https://github.com/gwenneg"
+  },
+  "keywords": [
+    "renovate",
+    "mintmaker",
+    "konflux",
+    "automerge",
+    "devops"
+  ],
+  "repository": "https://github.com/gwenneg/mintmaker-automerge",
+  "license": "Apache-2.0",
+  "version": "0.1.0"
+}
