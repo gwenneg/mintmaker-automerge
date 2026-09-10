@@ -1,0 +1,25 @@
+# Claude Code local settings
+.claude/
+
+# editors and IDEs
+.idea/
+.vscode/
+.fleet/
+*.iml
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Linux (Fedora)
+.directory
+.fuse_hidden*
+.nfs*
+.Trash-*

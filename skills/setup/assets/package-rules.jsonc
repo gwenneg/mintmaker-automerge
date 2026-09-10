@@ -1,0 +1,139 @@
+// One block per Renovate manager. Copy the blocks for the ecosystems detected
+// in the repo into the packageRules array of renovate.jsonc.template, keep
+// their comments, and fill the names marked with <...>. Where a manager offers
+// several widths, copy exactly one. Rules apply in order and a later rule
+// overrides an earlier one, so a carve-out goes after the rule it narrows.
+// This file is a valid JSONC array so an editor can check the syntax of every
+// block.
+[
+  // ---------------------------------------------------------------- github-actions
+  {
+    "matchManagers": ["github-actions"],
+    // Excludes digest-only updates, so a hijacked tag re-pointed to a malicious commit
+    // with no version delta never gets automerged. Only meaningful when actions are
+    // pinned by SHA with a version comment.
+    "matchUpdateTypes": ["patch", "minor"],
+    // Actions run arbitrary code in CI, so each one is vetted by name.
+    // Actions vetted for automerge. Add new ones deliberately.
+    "matchDepNames": ["<action-in-use>", "<action-in-use>"],
+    "automerge": true
+  },
+
+  // ---------------------------------------------------------------- maven
+  {
+    "matchManagers": ["maven"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh
+    // releases, to reduce the risk of merging a compromised one.
+    "automerge": true
+  },
+  {
+    // Carve-out for a framework whose upgrades follow an LTS track, so a human picks
+    // the target version instead of Renovate jumping to the newest minor.
+    // Example: Quarkus, see https://quarkus.io/releases/. Replace or delete.
+    "matchManagers": ["maven"],
+    "matchPackageNames": ["io.quarkus*"],
+    "automerge": false
+  },
+  {
+    // Maven wrapper bumps (.mvn/wrapper/maven-wrapper.properties, mvnw) change the
+    // build tool itself and need manual review.
+    "matchManagers": ["maven-wrapper"],
+    "automerge": false
+  },
+
+  // ---------------------------------------------------------------- gradle
+  {
+    "matchManagers": ["gradle"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh releases.
+    "automerge": true
+  },
+  {
+    // Gradle wrapper bumps change the build tool itself and need manual review.
+    "matchManagers": ["gradle-wrapper"],
+    "automerge": false
+  },
+
+  // ---------------------------------------------------------------- gomod
+  {
+    "matchManagers": ["gomod"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh releases.
+    // MintMaker also enables updates of indirect dependencies, so they are covered too.
+    "automerge": true
+  },
+  {
+    // Optional: keep indirect dependency bumps on manual review. Delete if the
+    // user is fine automerging them.
+    "matchManagers": ["gomod"],
+    "matchDepTypes": ["indirect"],
+    "automerge": false
+  },
+
+  // ---------------------------------------------------------------- npm (pick one width)
+  // Width 3, an allow-list, is the "any manager" block at the end of this file
+  // with "npm" as the manager.
+  // Optional grouping: add "groupName": "npm dependencies" to the chosen width
+  // block, so the automerged bumps arrive as one PR. The group only automerges
+  // once every update in it passes CI, so one broken bump blocks the batch. Keep
+  // the group inside the width block, so the grouped PR holds only updates that
+  // automerge.
+  {
+    // Width 1: every patch and minor bump. Relies on MintMaker's release-age delay
+    // as the defense against a compromised release.
+    "matchManagers": ["npm"],
+    "matchUpdateTypes": ["patch", "minor"],
+    "automerge": true
+  },
+  {
+    // Width 2: development dependencies only. The runtime dependency list never
+    // changes unattended, but build and test tooling does, and it runs in CI with
+    // whatever the job can reach and produces the shipped artifact.
+    "matchManagers": ["npm"],
+    "matchDepTypes": ["devDependencies"],
+    "matchUpdateTypes": ["patch", "minor"],
+    "automerge": true
+  },
+
+  // ---------------------------------------------------------------- python
+  {
+    // Keep only the managers detected in the repo.
+    "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry", "pep621"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh releases.
+    "automerge": true
+  },
+
+  // ---------------------------------------------------------------- cargo
+  {
+    "matchManagers": ["cargo"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh releases.
+    "automerge": true
+  },
+
+  // ---------------------------------------------------------------- bundler
+  {
+    "matchManagers": ["bundler"],
+    // Major bumps always need manual review, so they're excluded here.
+    "matchUpdateTypes": ["patch", "minor"],
+    // No minimumReleaseAge here: MintMaker's global config already holds back fresh releases.
+    "automerge": true
+  },
+
+  // ---------------------------------------------------------------- any manager: allow-list width
+  {
+    // For a library ecosystem where the team wants an allow-list instead of every
+    // patch and minor bump. Replace <manager> with the Renovate manager slug.
+    "matchManagers": ["<manager>"],
+    "matchPackageNames": ["<package>", "<package>"],
+    "matchUpdateTypes": ["patch", "minor"],
+    "automerge": true
+  }
+]
