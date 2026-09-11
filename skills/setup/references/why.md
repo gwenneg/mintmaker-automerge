@@ -4,28 +4,6 @@ Read this when the user asks why a rule exists or why an alternative was not
 chosen. The short form of each point is a comment in the generated config;
 this file is the long form.
 
-## The goal, and what stays out of scope
-
-The goal isn't to edit a config file. It is to cut the engineering time
-spent merging routine, low-risk dependency bumps, so that review effort
-goes to the few bumps where a human's judgment matters. Every patch or minor
-bump that needs someone to notice a PR, skim it, and click merge is a small
-recurring tax. Letting Renovate merge the safe ones removes that tax without
-removing review from the updates that need it.
-
-The scope is deliberate. Narrow, explicit, config-driven rules (an
-allow-list, a release-age delay, carve-outs for known-risky packages) are
-what make it acceptable to remove the human from the loop for this category
-of update, because nothing depends on a reviewer catching a bad release in
-the moment. Bumps that are too complex or context-dependent for Renovate's
-rules to judge are a different problem with a different solution, for
-instance an AI-assisted review of the specific bump, and out of scope here.
-
-Setting that expectation up front matters. A user who thinks this will
-handle all their dependency updates will be alarmed the first time a
-major-version PR still waits for them. A user who understands the scope
-reads that as the system working as designed.
-
 ## No `extends` of MintMaker's global config
 
 MintMaker runs Renovate with `config/renovate/renovate.json` from
@@ -125,16 +103,12 @@ points at and Renovate has nothing to open. That is why the skill offers
 have the `pinDigest` update type and stay manual.
 
 Library ecosystems are offered three widths because the tradeoff differs
-per team:
-
-1. Every patch and minor bump. It relies on the release-age delay as the
-   defense against a compromised release.
-2. Development dependencies only. The runtime dependency list never changes
-   unattended, but build and test tooling does. It runs in CI on those PRs,
-   install scripts included, and a bundler or compiler among it produces
-   the shipped artifact.
-3. An allow-list, like the actions rule. Strongest, and the most
-   maintenance.
+per team. Every patch and minor bump relies on the release-age delay as the
+defense against a compromised release. Development dependencies only keeps
+the runtime dependency list from changing unattended, but build and test
+tooling still runs in CI on those PRs, install scripts included, and a
+bundler or compiler among it produces the shipped artifact. An allow-list
+is the strongest and the most maintenance.
 
 For Go, MintMaker's global config enables updates of indirect dependencies
 (`matchDepTypes: ["indirect"]` in its `gomod` block), so option 1
@@ -173,25 +147,3 @@ automerge rules, for three reasons:
 - Automerge is the repo owner's trust decision. A preset moves it to
   whoever can merge in the shared repo, and changes there reach every
   consumer with no PR in their own repo.
-
-A repo that already extends a shared preset should know what the preset
-sets. A `minimumReleaseAge` shorter than MintMaker's weakens the delay
-without anything in the repo showing it, because repo config wins over the
-global one.
-
-## What the validator checks
-
-`renovate-config-validator` checks syntax and schema. MintMaker's docs say
-it "cannot verify that, for example, a file matching pattern will actually
-match any files in your repository". A misspelled package or action name
-passes and silently matches nothing.
-
-## Why required status checks are the gate
-
-Renovate merges through GitHub's auto-merge (`platformAutomerge`, on by
-default), which only waits for required checks. Renovate's docs, in the
-`platformAutomerge` entry, say that without the platform's own
-"Require status checks before merging" rule the platform might merge
-Renovate PRs even if the repository's tests have not started, are still in
-progress, or have failed. The full GitHub-side steps are in
-`github-branch-protection.md`.
