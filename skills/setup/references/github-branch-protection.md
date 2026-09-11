@@ -1,39 +1,22 @@
 # GitHub branch-protection changes for automerge
 
-Enabling automerge in `renovate.jsonc` isn't enough on its own — three
-things on the GitHub side need attention for it to work safely.
+The GitHub side of automerge, in the order Step 8 of the skill walks
+through it: the required checks that gate the merge, the bypass that lets
+the Konflux app merge without a human approval, and the repository setting
+that lets GitHub do the merging.
 
-1. **Required status checks (not optional).** Renovate merges through
-   GitHub's auto-merge (`platformAutomerge`, on by default), and GitHub only
-   waits for the checks marked required. Renovate's docs warn that without
-   that rule the platform might merge Renovate PRs before the tests have
-   started, while they run, or after they failed.
-   The required check is what makes automerge wait for CI. Set this up
-   regardless of anything else in this doc.
-2. **The Konflux bypass (mechanical, needed for automerge to fire at all).**
-   If the branch also requires "at least 1 approval," the Konflux app can't
-   merge its own PRs any more than a human could without one — it needs to
-   be explicitly allowed to bypass that specific requirement.
-3. **"Allow auto-merge" on the repo (speed, not safety).** Without it
-   GitHub's auto-merge is unavailable and Renovate falls back to merging
-   the PR itself on a later MintMaker run.
+## Part 1: Required status checks, the actual gate
 
-## Part 1: Required status checks — the actual gate
+GitHub's auto-merge waits for required checks and nothing else, so this
+part decides whether automerge is safe, not just whether it works.
+Recommend the strongest gate the repo already has the pieces for:
 
-This is the part that determines whether automerge is safe, not just
-whether it's technically possible. Recommend the strongest gate the repo
-already has the pieces for:
-
-- **Include**: whatever workflows build and test the actual code — a full
+- **Include**: whatever workflows build and test the actual code, a full
   `mvnw verify`/`go test`/`npm test` run, linting, checkstyle, anything that
   fails deterministically when the PR's own diff breaks something. If the
-  repo has more than one of these (e.g. a build job and a separate test
-  job), require all of them, not just one.
+  repo has a build job and a separate test job, require both.
 - **Include the Konflux PR pipeline check** whenever the `tekton` block is
-  on. It is named like `Red Hat Konflux / <component>-on-pull-request`, with
-  a prefix that depends on the Konflux instance, and it is the only check
-  that runs the updated pipeline of a `tekton` PR. Without it, GitHub's
-  auto-merge can merge that PR before the Konflux build finishes.
+  on: it is the only check that runs the updated pipeline of a `tekton` PR.
 - **Exclude**: checks that can go red for reasons that have nothing to do
   with whether this specific PR is correct. Vulnerability/CVE scanning is
   the clearest example — a new CVE can be disclosed against a dependency
@@ -51,10 +34,6 @@ already has the pieces for:
   file, so requiring it would block every dependency PR forever, and
   `renovate/stability-days`, Renovate's own release-age check, which shows
   up in the list of checks of a MintMaker PR but never on a human's PR.
-- **This is a per-repo call.** Which workflows exist, which are trustworthy
-  signal, and which are known-flaky varies per repo — scan
-  `.github/workflows/` for candidates and ask the user rather than guessing
-  which ones to recommend as required.
 
 Configure this under the repo's **Settings → Rules → Rulesets** → the
 ruleset covering the target branch → **Require status checks to pass** →
@@ -62,12 +41,10 @@ add the selected workflow job names.
 
 ## Part 2: The Konflux bypass
 
-If the branch's ruleset also requires "at least 1 approval" before merging,
-Renovate/MintMaker/the Konflux app still can't merge its own PRs — the
-approval requirement blocks it just like it would block a human. The app
-needs to be explicitly allowed to bypass that one requirement (and, per
-Part 1, nothing else — it should still have to pass required status
-checks).
+If the branch's ruleset requires an approval before merging, the Konflux
+app can't merge its own PRs any more than a human could without one. It
+needs to be allowed to bypass that one requirement, and nothing else: it
+should still have to pass the required status checks.
 
 ### Check org-level rules first
 
@@ -119,11 +96,9 @@ organized:
    narrower mode loses nothing. **Always allow** also lets the app push to
    the branch directly, which nothing here needs.
 6. Save the ruleset.
-7. Verify with the next PR from the Konflux app on a
-   `konflux/mintmaker/...` branch: with passing checks and no human
-   approval, it should merge on its own on a later MintMaker run. If the
-   repo also requires status checks to pass, those still apply — this
-   bypass only removes the approval blocker, which is the intended scope.
+7. The first Konflux-app PR that merges with passing checks and no human
+   approval confirms it; Step 10 of the skill tells the user to watch for
+   that. Required status checks still apply to the app.
 
 ### Repos on classic branch protection rules
 
@@ -136,19 +111,10 @@ the splitting question above doesn't arise. GitHub recommends rulesets over
 branch protection rules, so if the repo has both, look at the ruleset
 first; the two are enforced together.
 
-### What NOT to do
-
-Don't add the Konflux app as a bypass actor to a ruleset that also
-restricts pushes or requires status checks unless that's genuinely
-intended — that would let the app skip CI or push directly, which is a
-much bigger exception than "skip human approval on an automated dependency
-PR."
-
 ## Part 3: "Allow auto-merge" on the repository
 
 GitHub's auto-merge is a repository setting: **Settings → General → Pull
-Requests → Allow auto-merge**. When it's off, Renovate can't hand the merge
-to GitHub and falls back to its own automerge: it merges the PR itself on a
-later run, once every check has passed. MintMaker runs every 4 hours, so the
-merge lands hours later than it would with the setting on. Either way CI
-still gates the merge; this setting only changes when it happens.
+Requests → Allow auto-merge**. When it's off, Renovate falls back to
+merging the PR itself on a later MintMaker run, once every check has
+passed, so the merge lands hours later. CI still gates it either way; the
+setting only changes when the merge happens.

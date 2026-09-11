@@ -239,9 +239,10 @@ version from them, and merging the standing release PR publishes to the
 marketplace.
 
 The plugin is one skill, `skills/setup/`: `SKILL.md` drives the
-conversation, `scripts/detect.sh` gathers the repository facts, `assets/`
-holds the config skeleton and the per-ecosystem rule blocks, and
-`references/` holds the long-form reasoning and the GitHub steps.
+conversation and carries the config skeleton, the per-ecosystem rule
+blocks, and the validator workflow inline, `scripts/detect.sh` gathers the
+repository facts, and `references/` holds the long-form reasoning and the
+GitHub steps.
 
 ## License
 
