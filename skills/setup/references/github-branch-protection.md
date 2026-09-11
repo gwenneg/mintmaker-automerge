@@ -89,9 +89,8 @@ organized:
    contains only "Require a pull request before merging" with "Required
    approvals: 1".
 3. Open that ruleset and scroll to **Bypass list**.
-4. Click **Add bypass**, search for the Konflux GitHub App, and add it. Its
-   name depends on the Konflux instance the repo is on; the setup skill
-   reads it from the author of an existing MintMaker PR.
+4. Click **Add bypass**, search for **Red Hat Konflux**, the GitHub App
+   owned by `redhat-appstudio`, and add it.
 5. Choose the bypass mode. Recommend **For pull requests only**: the app
    can then skip the approval rule only when the change comes in through a
    pull request, which is the only way Renovate ever merges, so the
