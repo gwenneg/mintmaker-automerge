@@ -1,9 +1,11 @@
 # GitHub branch-protection changes for automerge
 
-The GitHub side of automerge, in the order Step 8 of the skill walks
-through it: the required checks that gate the merge, the bypass that lets
-the Konflux app merge without a human approval, and the repository setting
-that lets GitHub do the merging.
+The GitHub side of automerge, in the order Step 9 of the skill walks
+through it: the required checks that gate the merge, and the bypass that
+lets the Konflux app merge without a human approval when the branch
+requires one. Part 3, the repository setting that lets GitHub do the
+merging, is optional and only changes when the merge lands; the skill
+mentions it as a tip in Step 10.
 
 ## Part 1: Required status checks, the actual gate
 
