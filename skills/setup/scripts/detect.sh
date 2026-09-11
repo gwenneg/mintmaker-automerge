@@ -203,7 +203,6 @@ if [ -d .tekton ]; then
     fi
   done
 fi
-say "konflux_app_login: app/red-hat-konflux (default instance; a MintMaker PR author shows the real one)"
 
 say "== Workflow jobs (GitHub check names, for Step 9; matrix jobs appear as 'Name (value)')"
 list '^\.github/workflows/[^/]+\.ya?ml$' | while read -r wf; do
@@ -258,7 +257,8 @@ fi
 say "== Screens (print verbatim in Step 1)"
 say "### ▶️ Step 1/10 Detected ecosystems"
 if [ "$konflux" = yes ]; then
-  say "✅ \`.tekton/\` holds $n pipeline files with Konflux markers."
+  say "\`.tekton/\` holds $n pipeline files with Konflux markers."
+  say ""
   say "Default branch: \`${db:-unknown}\`"
   say ""
   say "| Ecosystem | Found in |"
@@ -305,7 +305,7 @@ if [ "$konflux" = yes ]; then
       say "|---|---|---|"
       printf '%s' "$CFGTABLE" | sed '/^$/d'
     else
-      say "✅ Nothing to remove from the existing config."
+      say "Nothing to remove from the existing config."
     fi
     [ -n "${CFGKEPT:-}" ] && say "$CFGKEPT"
   fi

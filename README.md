@@ -15,7 +15,7 @@ repository:
 
 The updates you decide are low-risk merge on their own once CI passes,
 after MintMaker's release-age delay. Everything else, and every ecosystem
-you leave out, keeps waiting for a human, exactly as today.
+you leave out, stays on manual review, exactly as today.
 
 > [!IMPORTANT]
 > This plugin only makes sense for repositories whose dependency updates
@@ -32,10 +32,12 @@ you leave out, keeps waiting for a human, exactly as today.
 - **Config-driven, not judgment-driven.** Narrow, explicit rules are what
   make it acceptable to remove the human from the loop. No reviewer, human
   or AI, has to catch a bad release in the moment.
-- **Built on MintMaker's release-age delay.** MintMaker holds back any
-  release younger than 3 days before opening a PR, which is the window in
-  which compromised releases are usually caught and pulled. The plugin
-  inherits that delay rather than restating it, so it never drifts.
+- **Built on MintMaker's release-age delay.** MintMaker's
+  [global config](https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json)
+  holds back any release younger than 3 days before opening a PR, which
+  is the window in which compromised releases are usually caught and
+  pulled. The plugin inherits that delay rather than restating it, so it
+  never drifts.
 - **GitHub Actions are allow-listed by name.** Actions run arbitrary code
   in CI, so each one is vetted individually, and only version bumps of
   SHA-pinned actions qualify. A moved tag never merges on its own.
@@ -71,7 +73,7 @@ Then, from the repository you want to set up:
 The skill opens with a scan of the repository. Every decision is a menu
 with a recommended option, each step fits on one screen with a one-line note on
 what Renovate and MintMaker do there, and a summary table shows the whole
-trust decision before a byte is written. Expect about ten minutes and a dozen quick decisions. At the
+trust decision before a byte is written. Expect a few quick decisions along the way and fifteen minutes end to end. At the
 end you have a reviewed config file on a branch, an open PR, and the
 GitHub settings in place.
 
@@ -99,16 +101,17 @@ yourself with `/plugin marketplace update claude-ichiba` and
    removed with the reason: an `extends` of MintMaker's global config, and
    `baseBranchPatterns`, both applied by MintMaker itself.
 3. **Sets the library rule.** How wide automerge goes for library
-   ecosystems, and which packages must never be automerged whatever the
-   scope.
-4. **Vets GitHub Actions.** Whether to pin actions to commit SHAs, and
-   which actions may automerge.
+   ecosystems, which packages must never be automerged whatever the
+   scope, and which packages may have their majors automerged too.
+4. **Vets GitHub Actions.** Whether to pin actions to commit SHAs,
+   which actions may automerge, and whether any of them may have its
+   majors automerged too.
 5. **Decides on base images and build-tool wrappers.** Base image bumps
    tested by the Konflux build, digest pinning, and whether wrapper bumps
    merge on their own.
 6. **Covers the Konflux pipeline and the extras.** Pipeline updates any
-   day or on MintMaker's Saturday batch, packages whose majors may
-   automerge too, indirect Go dependencies, grouped npm PRs.
+   day or on MintMaker's Saturday batch, indirect Go dependencies,
+   grouped npm PRs.
 7. **Checks for overlap with other updaters.** Two bots on one ecosystem
    means two PRs for one bump. You choose whether a home-grown base-image
    workflow retires once Renovate covers base images, and whether to
@@ -129,8 +132,10 @@ yourself with `/plugin marketplace update claude-ichiba` and
    for the organization through an organization ruleset. You apply them
    in the GitHub UI and confirm each one.
 10. **Opens the PR**, with your confirmation before anything leaves your
-    machine. The PR body lists the settings above as a checklist. Merging
-    it turns automerge on. It closes with what to expect once it is live.
+    machine. The PR body records that you read and understood the two
+    settings above and took on applying them, so a reviewer checks them
+    before merging rather than trusting the plugin. Merging it turns
+    automerge on. It closes with what to expect once it is live.
 
 ## The decisions you make
 
@@ -139,6 +144,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
 | How wide does automerge go for library ecosystems? | Every patch and minor bump. Development dependencies only, where the manager distinguishes them. An allow-list of packages. Or decide per ecosystem. | Every patch and minor bump |
 | Any packages that should never be automerged? | Packages that stay on manual review whatever the scope, such as a framework on an LTS track | Frameworks found in the repo, such as Quarkus, Spring Boot, Django, Angular |
 | Any packages whose major bumps may automerge too? | Packages you name, with your reason recorded in the config, such as a test library with good coverage | None; no candidates are proposed |
+| Any actions whose major bumps may automerge too? | Allow-listed actions you name, with your reason recorded in the config | None; a major of an action often changes its inputs or runtime |
 | Pin GitHub Actions to commit SHAs? | Yes: Renovate opens one PR per action to replace the tag with its SHA. No: the allow-list guards version bumps only | Yes when tag-pinned actions are found |
 | Which actions are allowed to automerge? | The actions maintained by GitHub, the third-party ones, both, or a list you type | The GitHub-maintained ones |
 | Automerge indirect Go dependencies? | Yes or keep them manual | Asked when `go.mod` is found |
@@ -152,7 +158,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
 
 What never automerges, whatever you answer: digest-only updates of
 GitHub Actions, Helm charts, Terraform, and any ecosystem without a rule.
-Major version bumps wait for a human too, except for the packages you
+Major version bumps stay on manual review too, except for the packages you
 name.
 
 ## What you get
@@ -195,7 +201,7 @@ names in it:
       "automerge": true
     },
     {
-      // Quarkus follows an LTS track, so a human picks the target version.
+      // Quarkus follows an LTS track, so a reviewer picks the target version.
       "matchManagers": ["maven"],
       "matchPackageNames": ["io.quarkus*"],
       "automerge": false
@@ -210,7 +216,7 @@ names in it:
 
 Alongside it: a `.github/workflows/renovate-config-validator.yml` that
 runs MintMaker's validator whenever the config changes, and a PR whose
-body records the branch-protection checklist.
+body records your acknowledgement of the branch-protection settings.
 
 ## How the safety adds up
 
@@ -261,7 +267,7 @@ repositories, or set `minimumReleaseAge` in your file.
 | A PR merged with no approval | That is the bypass working as designed | Check that the bypass is scoped to the approval rule and set to "For pull requests only" |
 | Human PRs are stuck on a pending required check | A required check that does not run on every PR, such as the config validator workflow or `renovate/stability-days` | Remove it from the required checks. Only require checks that run on every PR. |
 | The validator workflow fails on the PR | A syntax or schema error in the config | Fix the file and push again. The workflow log names the line. |
-| The skill finds no MintMaker PR to read the app name from | MintMaker has not opened a PR on this repository yet | The skill uses `app/red-hat-konflux` and the usual check names as placeholders. Verify them on the first MintMaker PR. |
+| The check names in Step 9 don't match the PR | MintMaker has not opened a PR on this repository yet, so the names are derived from `.tekton/` | Verify the check names on the first MintMaker PR. The app to add to the bypass is always `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`. |
 
 ## Development
 
