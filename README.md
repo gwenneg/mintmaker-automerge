@@ -13,9 +13,9 @@ repository:
 /mintmaker-automerge:setup
 ```
 
-Patch and minor bumps of the ecosystems you choose merge on their own once
-CI passes. Major bumps, packages you carve out, build-tool wrappers, and
-every ecosystem you leave out keep waiting for a human, exactly as today.
+The updates you decide are low-risk merge on their own once CI passes,
+after MintMaker's release-age delay. Everything else, and every ecosystem
+you leave out, keeps waiting for a human, exactly as today.
 
 > [!IMPORTANT]
 > This plugin only makes sense for repositories whose dependency updates
@@ -41,16 +41,19 @@ every ecosystem you leave out keep waiting for a human, exactly as today.
   SHA-pinned actions qualify. A moved tag never merges on its own.
 - **Branch protection is treated as the gate, not as paperwork.** The
   plugin explains which status checks to require, how to let the Konflux
-  app skip the approval rule and nothing else, and asks you to confirm the
-  settings are in place before it opens the PR.
+  app skip an approval rule and nothing else when the branch has one, and
+  asks you to confirm the settings are in place before it opens the PR.
 - **One readable file, no shared preset.** The generated config is small,
   commented line by line, and complete on its own. What merges unattended
   in a repository stays that repository's decision.
 
 ## Quick start
 
-You need [Claude Code](https://claude.com/claude-code), a `gh` login, and a
-Konflux-onboarded repository, one with a `.tekton/` folder. Install from
+You need [Claude Code](https://claude.com/claude-code) and a
+Konflux-onboarded repository, one with a `.tekton/` folder. A `gh` login
+is handy, not required: with it the skill opens the PR itself, without it
+Claude reaches GitHub another way, the REST API with a token if one is set,
+or a link you open to create the PR yourself. Install from
 the [claude-ichiba](https://github.com/gwenneg/claude-ichiba) marketplace:
 
 ```
@@ -65,10 +68,17 @@ Then, from the repository you want to set up:
 /mintmaker-automerge:setup
 ```
 
-The skill opens with the plan and the questions it will ask, so you know
-what is coming. Expect ten short steps and about as many decisions. At the
+The skill opens with a scan of the repository. Every decision is a menu
+with a recommended option, each step fits on one screen with a one-line note on
+what Renovate and MintMaker do there, and a summary table shows the whole
+trust decision before a byte is written. Expect about ten minutes and a dozen quick decisions. At the
 end you have a reviewed config file on a branch, an open PR, and the
 GitHub settings in place.
+
+The skill pins Sonnet for its run, whatever model the session uses,
+because the current Fable model writes nothing between two menus and so
+hides every step screen. If your organization's model allowlist excludes
+Sonnet, the session model is used instead.
 
 Claude Code only auto-updates plugins from its official marketplace.
 Enable auto-update for claude-ichiba in the `/plugin` panel, or refresh it
@@ -77,51 +87,73 @@ yourself with `/plugin marketplace update claude-ichiba` and
 
 ## What it does
 
-1. **Checks Konflux onboarding.** A read-only script lists tracked files
-   and greps a few of them. No `.tekton/` folder with Konflux markers, no
-   setup.
-2. **Detects the repository.** Ecosystems (Maven, Gradle, Go, npm, Python,
-   Rust, Ruby, container images, pre-commit, GitHub Actions), how workflows
-   pin their actions, the default branch. You confirm or correct the list.
-3. **Finds the Renovate config**, or asks where to create it. Existing
+1. **Shows the detected ecosystems.** A read-only script checks Konflux onboarding
+   first: no `.tekton/` folder with Konflux markers, no setup. Then it
+   lists the ecosystems (Maven, Gradle, Go, npm, Python, Rust, Ruby,
+   container images, pre-commit, GitHub Actions), the default branch, the
+   base images and how they are pinned, how workflows pin their actions,
+   and frameworks worth keeping on manual review. You confirm or correct
+   the list.
+2. **Finds the Renovate config**, or asks where to create it. Existing
    custom rules are preserved. Two things an existing file may carry are
    removed with the reason: an `extends` of MintMaker's global config, and
    `baseBranchPatterns`, both applied by MintMaker itself.
-4. **Proposes the automerge rules**, ecosystem by ecosystem, and asks the
-   questions listed in the next section.
-5. **Checks for Dependabot overlap.** Two bots on one ecosystem means two
-   PRs for one bump. You choose to remove, narrow, or keep `dependabot.yml`.
-   Stale entries pointing at deleted directories are flagged on the way.
-6. **Shows the summary table**, waits for your go, writes the config, and
-   shows the diff. Every name in the rules is compared with what the repo
-   actually uses, because the validator cannot do that.
-7. **Adds a CI workflow** that validates the config on every change, with
-   MintMaker's own validator action, unless the repo already has one.
-8. **Walks you through the GitHub settings**: required status checks, the
-   Konflux app bypass, "Allow auto-merge". You apply them in the GitHub UI
-   and confirm each one.
-9. **Opens the PR**, with your confirmation before anything leaves your
-   machine. The PR body lists the settings above as a checklist. Merging
-   it turns automerge on.
-10. **Tells you what to expect** once it is live.
+3. **Sets the library rule.** How wide automerge goes for library
+   ecosystems, and which packages must never be automerged whatever the
+   scope.
+4. **Vets GitHub Actions.** Whether to pin actions to commit SHAs, and
+   which actions may automerge.
+5. **Decides on base images and build-tool wrappers.** Base image bumps
+   tested by the Konflux build, digest pinning, and whether wrapper bumps
+   merge on their own.
+6. **Covers the Konflux pipeline and the extras.** Pipeline updates any
+   day or on MintMaker's Saturday batch, packages whose majors may
+   automerge too, indirect Go dependencies, grouped npm PRs.
+7. **Checks for overlap with other updaters.** Two bots on one ecosystem
+   means two PRs for one bump. You choose whether a home-grown base-image
+   workflow retires once Renovate covers base images, and whether to
+   remove, narrow, or keep `dependabot.yml`. Stale Dependabot entries
+   pointing at deleted directories are flagged on the way.
+8. **Shows the summary table**, waits for your go, writes the config to
+   your working tree, nothing committed or pushed yet, and shows the
+   diff. Every name in the rules is compared with what the repo
+   actually uses, because the validator cannot do that. Then it adds a CI
+   workflow that validates the config on every change, with MintMaker's
+   own validator action, unless the repo already has one.
+9. **Walks you through the branch protection**, with a short primer on
+   rulesets, then one section per setting with the exact clicks: the
+   required status checks, the gate that makes automerge safe, which you
+   choose yourself after the guidance and confirm you will set; and, only
+   when the branch requires an
+   approval, the Konflux app bypass of that rule, per repository or once
+   for the organization through an organization ruleset. You apply them
+   in the GitHub UI and confirm each one.
+10. **Opens the PR**, with your confirmation before anything leaves your
+    machine. The PR body lists the settings above as a checklist. Merging
+    it turns automerge on. It closes with what to expect once it is live.
 
 ## The decisions you make
 
 | Question | Options | Default suggestion |
 |---|---|---|
-| How wide does automerge go, per library ecosystem? | Every patch and minor bump. Development dependencies only, where the manager distinguishes them. An allow-list of packages. | Asked per ecosystem, no default |
-| Which packages stay on manual review? | Any package whose upgrades follow a policy Renovate cannot know, such as a framework on an LTS track | Quarkus is the running example for Maven |
+| How wide does automerge go for library ecosystems? | Every patch and minor bump. Development dependencies only, where the manager distinguishes them. An allow-list of packages. Or decide per ecosystem. | Every patch and minor bump |
+| Any packages that should never be automerged? | Packages that stay on manual review whatever the scope, such as a framework on an LTS track | Frameworks found in the repo, such as Quarkus, Spring Boot, Django, Angular |
+| Any packages whose major bumps may automerge too? | Packages you name, with your reason recorded in the config, such as a test library with good coverage | None; no candidates are proposed |
 | Pin GitHub Actions to commit SHAs? | Yes: Renovate opens one PR per action to replace the tag with its SHA. No: the allow-list guards version bumps only | Yes when tag-pinned actions are found |
-| Which actions are allowed to automerge? | Any subset of the actions found in the workflows | The list found, for you to prune |
+| Which actions are allowed to automerge? | The actions maintained by GitHub, the third-party ones, both, or a list you type | The GitHub-maintained ones |
 | Automerge indirect Go dependencies? | Yes or keep them manual | Asked when `go.mod` is found |
 | One PR per npm bump, or one grouped PR? | Independent PRs, or a group that only merges when every bump in it passes | Asked when `package.json` is found |
 | Pipeline updates any day, or on MintMaker's Saturday batch? | `at any time`, or inherit the schedule | Asked |
+| Automerge base image bumps? | Digest, patch and minor bumps of the `FROM` images, tested by the Konflux PR build. Majors stay manual | Yes, asked when a container file is found |
+| Pin base images to digests? | Yes: one pin PR, then rebuilds of a tag arrive as digest PRs. No: tags only | Yes when an unpinned `FROM` line is found |
+| Automerge build-tool wrapper bumps? | Patch and minor bumps of the Maven or Gradle wrapper, or keep them manual | Keep manual: rare updates, and a bad one breaks every local build |
 | What happens to `dependabot.yml`? | Remove, narrow to what Renovate does not cover, or keep | Depends on the overlap found |
-| Which status checks are required? | Your build and test workflows, the Konflux PR pipeline check | Candidates read from the last MintMaker PR |
+| Which status checks are required? | Your call, after the guidance: typically the build, the tests, the Konflux PR pipeline check, never a scanner or a check that skips some PRs | None proposed; you confirm you understood and will set them |
 
-What never automerges, whatever you answer: major version bumps, Maven and
-Gradle wrapper bumps, container base images, digest-only updates of GitHub
-Actions, Helm charts, Terraform, and any ecosystem without a rule.
+What never automerges, whatever you answer: digest-only updates of
+GitHub Actions, Helm charts, Terraform, and any ecosystem without a rule.
+Major version bumps wait for a human too, except for the packages you
+name.
 
 ## What you get
 
@@ -188,9 +220,9 @@ explains every one of them.
 | Layer | What it does | Who provides it |
 |---|---|---|
 | Release-age delay | No PR for a release younger than 3 days. Covers every update, automerged or not. | MintMaker's global config, inherited |
-| Update-type filter | Only `patch` and `minor` qualify. Majors, digests, pins and lock-file maintenance stay manual. | The generated rules |
+| Update-type filter | `patch` and `minor` qualify by default, plus `digest` for base images. Majors stay manual unless you name the package; action digests, pins and lock-file maintenance always do. | The generated rules |
 | Allow-list for GitHub Actions | Each action is vetted by name, and only SHA-pinned actions can automerge safely. | The generated rules, plus SHA pinning |
-| Carve-outs | Packages you name stay manual whatever the update type. | Your answers |
+| Manual-review list | Packages you name stay manual whatever the update type. | Your answers |
 | Required status checks | GitHub's auto-merge waits for required checks only. Without them, a PR can merge before CI even starts. | You, in the branch ruleset |
 | Scoped bypass | The Konflux app skips the approval rule only, in "For pull requests only" mode. It still has to pass required checks. | You, in the branch ruleset |
 
@@ -216,7 +248,8 @@ repositories, or set `minimumReleaseAge` in your file.
   is missing, the config did not match that update.
 - The first PR from the Konflux app that merges with passing checks and no
   human approval confirms the bypass works.
-- Majors, carve-outs, wrappers, lock-file maintenance and ecosystems
+- Majors of every package you did not name, the manual-review list,
+  wrappers unless you opted in, lock-file maintenance and ecosystems
   without a rule still arrive as ordinary PRs. That is the intended scope.
 
 ## Troubleshooting
@@ -239,10 +272,11 @@ version from them, and merging the standing release PR publishes to the
 marketplace.
 
 The plugin is one skill, `skills/setup/`: `SKILL.md` drives the
-conversation and carries the config skeleton, the per-ecosystem rule
-blocks, and the validator workflow inline, `scripts/detect.sh` gathers the
-repository facts, and `references/` holds the long-form reasoning and the
-GitHub steps.
+conversation, sets its style (one screen per step, every decision a menu,
+a short note per step) and carries the config skeleton,
+the per-ecosystem rule blocks, and the validator workflow inline,
+`scripts/detect.sh` gathers the repository facts, and `references/` holds
+the long-form reasoning and the GitHub steps.
 
 ## License
 
