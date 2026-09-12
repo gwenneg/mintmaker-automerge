@@ -355,7 +355,7 @@ The table has three columns: updater, what it covers, status. The rows:
   workflow path and the `FROM` lines it touches. Status: ⚠️ overlaps
   Renovate when the user chose to automerge base images in Step 5,
   otherwise "not covered by Renovate" without a mark.
-- One row per Dependabot entry from the report's Dependabot section, with
+- One row per `dependabot.yml` line of the same report section, with
   ecosystem and directory. Status: ⚠️ overlaps Renovate, ✅ not covered by
   Renovate, or ⚠️ directory missing. A stale entry pointing at a deleted
   directory covers nothing, since Dependabot silently finds no files
