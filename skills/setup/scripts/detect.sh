@@ -134,6 +134,9 @@ else
 fi
 
 say "== Renovate config"
+# JSON5 allows bare keys and single-quoted strings, so a key or a preset may come with any quote or none.
+Q="[\"']"
+key() { printf '(^|[^A-Za-z0-9_])%s?(%s)%s?[[:space:]]*:' "$Q" "$1" "$Q"; }
 found=""
 for c in renovate.json renovate.jsonc renovate.json5 .github/renovate.json .github/renovate.jsonc .github/renovate.json5 .renovaterc .renovaterc.json .renovaterc.jsonc .renovaterc.json5; do
   [ -f "$c" ] && found="$found $c"
@@ -145,12 +148,12 @@ if [ -n "$found" ]; then
   for c in $found; do
     case "$c" in package.json*) continue ;; esac
     say "-- $c, notable lines:"
-    grep -n -E '"(extends|baseBranchPatterns|baseBranches|minimumReleaseAge|automerge|packageRules|osvVulnerabilityAlerts|enabledManagers|schedule)"' "$c" | sed 's/^/   /'
-    grep -o -E '"(github|gitlab|local)>[^"]+"' "$c" | sed 's/^/   extends preset: /'
+    grep -n -E "$(key 'extends|baseBranchPatterns|baseBranches|minimumReleaseAge|automerge|packageRules|osvVulnerabilityAlerts|enabledManagers|schedule')" "$c" | sed 's/^/   /'
+    grep -o -E "$Q(github|gitlab|local)>[^\"']+$Q" "$c" | sed 's/^/   extends preset: /'
     say "-- $c, full content:"
     cat -n "$c"
     # Shared presets from other GitHub repos, fetched so Step 2 needs no command.
-    grep -o -E '"github>[^"]+"' "$c" | tr -d '"' | grep -v 'konflux-ci/mintmaker//' | sort -u | while read -r preset; do
+    grep -o -E "${Q}github>[^\"']+$Q" "$c" | tr -d "\"'" | grep -v 'konflux-ci/mintmaker//' | sort -u | while read -r preset; do
       spec="${preset#github>}"; ref="${spec##*#}"; [ "$ref" = "$spec" ] && ref=""; spec="${spec%%#*}"
       case "$spec" in
         *//*) repo="${spec%%//*}"; path="${spec#*//}" ;;
@@ -167,20 +170,21 @@ if [ -n "$found" ]; then
       if [ -n "$body" ]; then printf '%s\n' "$body" | sed 's/^/   /'; else say "   (not fetched: the repo may be private; read it by hand in Step 2, with gh api if available)"; fi
     done
     # Rows for the Step 2 table: the two known removals, the presets to read, the rest kept.
-    CFGTABLE="$CFGTABLE$(awk -v f="$c" '
+    CFGTABLE="$CFGTABLE$(awk -v f="$c" -v q="$Q" -v nq="[^\"']+" '
       function r(what, happens) { printf "| %s:%d | %s | %s |\n", f, NR, what, happens }
-      /"github>konflux-ci\/mintmaker\/\/config\/renovate\/renovate\.json"/ { r("`extends` MintMaker global config", "⚠️ removed, MintMaker already applies it to every onboarded repo") }
+      function key(n) { return "(^|[^A-Za-z0-9_])" q "?(" n ")" q "?[[:space:]]*:" }
+      $0 ~ (q "github>konflux-ci/mintmaker//config/renovate/renovate\\.json" q) { r("`extends` MintMaker global config", "⚠️ removed, MintMaker already applies it to every onboarded repo") }
       { rest=$0
-        while (match(rest, /"(github|gitlab|local)>[^"]+"/)) {
+        while (match(rest, q "(github|gitlab|local)>" nq q)) {
           p=substr(rest, RSTART, RLENGTH); rest=substr(rest, RSTART+RLENGTH)
           if (p !~ /konflux-ci\/mintmaker\/\/config/) r("extends preset " p, "read and reported below")
         } }
-      /"baseBranchPatterns"|"baseBranches"/ { r("`baseBranchPatterns`", "⚠️ removed, MintMaker sets it per Konflux component") }
-      /"minimumReleaseAge"/ { r("`minimumReleaseAge`", "⚠️ redundant, MintMaker sets it globally; removed") }
-      /"enabledManagers"/ { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
+      $0 ~ key("baseBranchPatterns|baseBranches") { r("`baseBranchPatterns`", "⚠️ removed, MintMaker sets it per Konflux component") }
+      $0 ~ key("minimumReleaseAge") { r("`minimumReleaseAge`", "⚠️ redundant, MintMaker sets it globally; removed") }
+      $0 ~ key("enabledManagers") { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
     ' "$c")
 "
-    grep -q '"packageRules"' "$c" && CFGKEPT="Existing package rules are kept and reviewed with the new ones."
+    grep -q -E "$(key packageRules)" "$c" && CFGKEPT="Existing package rules are kept and reviewed with the new ones."
   done
 else
   say "config_files: none"
