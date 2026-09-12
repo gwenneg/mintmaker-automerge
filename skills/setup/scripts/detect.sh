@@ -105,7 +105,7 @@ done > "${TMPDIR:-/tmp}/mm-bases.$$"
 cat "${TMPDIR:-/tmp}/mm-bases.$$"
 [ -s "${TMPDIR:-/tmp}/mm-bases.$$" ] || say "base_images: none"
 
-say "== Other updaters (workflows that update base images on their own)"
+say "== Other updaters (Step 7: Dependabot entries, and workflows that update base images on their own)"
 ou=$(list '^\.github/workflows/[^/]+\.ya?ml$' | while read -r wf; do
   # Mentions base images outside comments, and writes changes back (a PR action or a push).
   if grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -114,6 +114,25 @@ ou=$(list '^\.github/workflows/[^/]+\.ya?ml$' | while read -r wf; do
   fi
 done)
 say "base_image_workflows: ${ou:-none}"
+if [ -f .github/dependabot.yml ]; then
+  # Handles both "directory:" and the newer "directories:" list.
+  awk '
+    /^[[:space:]]*-?[[:space:]]*package-ecosystem:/ {eco=$NF; gsub(/"/, "", eco); mode=""}
+    /^[[:space:]]*directory:/ {dir=$NF; gsub(/"/, "", dir); print eco, dir; mode=""}
+    /^[[:space:]]*directories:/ {mode="dirs"; next}
+    mode=="dirs" && /^[[:space:]]*-[[:space:]]*/ {dir=$NF; gsub(/"/, "", dir); print eco, dir; next}
+    mode=="dirs" && /^[[:space:]]*[a-z-]+:/ {mode=""}
+  ' .github/dependabot.yml \
+  | while read -r eco dir; do
+    d="${dir#/}"; [ -z "$d" ] && d=.
+    case "$d" in
+      *\**) say "dependabot.yml: $eco $dir, glob, not checked" ;;
+      *) if [ -d "$d" ]; then say "dependabot.yml: $eco $dir, directory exists"; else say "dependabot.yml: $eco $dir, DIRECTORY MISSING"; fi ;;
+    esac
+  done
+else
+  say "dependabot.yml: none"
+fi
 
 say "== Renovate config"
 found=""
@@ -233,26 +252,6 @@ say "== Validator action"
 vsha=$(git ls-remote https://github.com/konflux-ci/renovate-config-validator-action.git refs/heads/main 2>/dev/null | cut -f1)
 say "validator_action_main_sha: ${vsha:-unknown (offline? fetch with: git ls-remote https://github.com/konflux-ci/renovate-config-validator-action.git refs/heads/main)}"
 
-say "== Dependabot"
-if [ -f .github/dependabot.yml ]; then
-  # Handles both "directory:" and the newer "directories:" list.
-  awk '
-    /^[[:space:]]*-?[[:space:]]*package-ecosystem:/ {eco=$NF; gsub(/"/, "", eco); mode=""}
-    /^[[:space:]]*directory:/ {dir=$NF; gsub(/"/, "", dir); print eco, dir; mode=""}
-    /^[[:space:]]*directories:/ {mode="dirs"; next}
-    mode=="dirs" && /^[[:space:]]*-[[:space:]]*/ {dir=$NF; gsub(/"/, "", dir); print eco, dir; next}
-    mode=="dirs" && /^[[:space:]]*[a-z-]+:/ {mode=""}
-  ' .github/dependabot.yml \
-  | while read -r eco dir; do
-    d="${dir#/}"; [ -z "$d" ] && d=.
-    case "$d" in
-      *\**) say "$eco $dir: glob, not checked" ;;
-      *) if [ -d "$d" ]; then say "$eco $dir: directory exists"; else say "$eco $dir: DIRECTORY MISSING"; fi ;;
-    esac
-  done
-else
-  say "dependabot.yml: none"
-fi
 
 say "== Screens (print verbatim in Step 1)"
 say "### ▶️ Step 1/10 Detected ecosystems"
