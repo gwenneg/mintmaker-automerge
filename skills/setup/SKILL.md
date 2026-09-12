@@ -398,51 +398,31 @@ repository: these blocks are the reference.
 Header comment, the optional `extends` block for action pinning, the
 `tekton` block, and a `{{PACKAGE_RULES}}` placeholder. Drop the
 `extends` block when the user declined pinning or every action is already
-SHA-pinned; drop the `schedule` line when they kept the Saturday batch.
+SHA-pinned; drop the `schedule` line and its comment when they kept the
+Saturday batch. The comments are part of the file the user keeps: copy
+them as they are, never add instructions meant for you, and never
+restate what the header already says.
 
 ```jsonc
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  // This file only holds this repository's overrides.
-  // MintMaker runs Renovate with its own global config and merges this file
-  // on top of it, so every setting missing here is inherited from MintMaker:
-  // the enabled managers, the minimumReleaseAge that holds back fresh releases,
-  // the vulnerability alerts whose fix PRs skip that delay, the tekton and gomod
-  // manager blocks, branch naming, PR limits, the Saturday schedule of the
-  // tekton manager...
-  // How the merge works:
-  // - A setting written here replaces the inherited value.
-  // - packageRules are added to the inherited rules, not replaced.
-  // - A manager block such as "tekton": {...} merges key by key with the
-  //   inherited block, so "tekton.automerge" below keeps MintMaker's own
-  //   tekton packageRules.
-  // - enabledManagers is the exception: setting it here replaces the whole
-  //   inherited list, so this file never sets it.
-  // The packageRules below are limited to patch and minor updates by default:
-  // a major bump stays on manual review unless a rule names its package. None sets
-  // minimumReleaseAge: the inherited delay already holds back fresh releases,
-  // the usual shape of a compromised one.
-  // Do not copy the global config here or add it to "extends": MintMaker's
-  // deployment can pin a specific commit of it, and a copy silently drifts.
-  // All automerge rules live in this file rather than in a shared preset:
-  // the file is small, it rarely changes, and what merges unattended is
-  // this repository's decision.
-  // Global config: https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
+  // Renovate overrides for this repository. MintMaker merges them on top of its
+  // global config, which sets the managers, the release-age delay, the
+  // vulnerability alerts, branch naming and PR limits:
+  // https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
+  // A key set here replaces the inherited value; packageRules are added to the
+  // inherited ones; enabledManagers would replace the whole list, so it is never set.
+  // Policy: patch and minor updates of the ecosystems below merge on their own once
+  // the required checks pass. Majors stay on manual review unless a rule names them.
   // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
   "extends": [
-    // Pins every GitHub Action to a commit SHA, so the github-actions rule below
-    // can tell a version bump from a moved tag. Remove this block if the repo
-    // already pins every action by SHA or chose not to pin.
+    // Pins actions to commit SHAs, so a version bump can be told from a moved tag.
     "helpers:pinGitHubActionDigests"
   ],
   "tekton": {
-    // Konflux pipeline updates in .tekton/, the only folder this manager reads:
-    // task bumps from the Konflux catalog, task replacements, and the pipeline
-    // migrations MintMaker runs with them. The PR's own Konflux build is the test
-    // of the change, so its check must be required on the base branch.
+    // Konflux pipeline updates in .tekton/: the PR's own Konflux build tests them.
     "automerge": true,
-    // Overrides MintMaker's Saturday schedule for pipeline updates. Remove this
-    // line to keep the weekly batch.
+    // Any day, instead of MintMaker's Saturday batch.
     "schedule": ["at any time"]
   },
   "packageRules": [
@@ -453,158 +433,138 @@ SHA-pinned; drop the `schedule` line when they kept the Saturday batch.
 
 ### The rule blocks
 
-One commented block per Renovate manager, with variants where a choice
-exists. Copy the blocks for the detected ecosystems into the placeholder,
-keep their comments, fill the names marked `<...>`, and copy exactly one
-variant where several are offered. Rules apply in order and a later rule
-overrides an earlier one, so a manual-review rule or a majors rule goes
-after the ecosystem rule it narrows or widens. Everything MintMaker's
-global config already sets stays out of the file; if the user asks for a
-key the blocks don't have, check the global config first, since a
-duplicate drifts out of sync.
+One block per Renovate manager, with variants where a choice exists.
+Copy the blocks for the detected ecosystems into the placeholder, fill
+the names marked `<...>`, and copy exactly one variant where several are
+offered. Rules apply in order and a later rule overrides an earlier one,
+so a manual-review rule or a majors rule goes after the ecosystem rule
+it narrows or widens. Everything MintMaker's global config already sets
+stays out of the file; if the user asks for a key the blocks don't have,
+check the global config first, since a duplicate drifts out of sync.
+
+Each ecosystem opens with a separator line that states its decision, the
+same facts as its row of the Step 8 table: what merges on its own, then
+what stays manual. That line is the comment of the plain patch-and-minor
+rule, which carries none of its own. A rule that narrows or widens the
+policy carries one or two lines saying why, and nothing else: no
+"optional", no "delete if", no restating of the policy.
 
 ```jsonc
 [
-  // ---------------------------------------------------------------- github-actions
+  // --- github-actions: patch and minor of the actions named below; majors, digest-only and every other action stay manual
   {
+    // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
+    // moved tag with no version change, the shape of a hijacked action, never merges alone.
     "matchManagers": ["github-actions"],
-    // Excludes digest-only updates, so a hijacked tag re-pointed to a malicious commit
-    // with no version delta never gets automerged. Only meaningful when actions are
-    // pinned by SHA with a version comment.
     "matchUpdateTypes": ["patch", "minor"],
-    // Actions run arbitrary code in CI, so each one is vetted by name.
-    // Actions vetted for automerge. Add new ones deliberately.
     "matchDepNames": ["<action-in-use>", "<action-in-use>"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- maven
+  // --- maven: patch and minor; majors, io.quarkus* and the wrapper stay manual
   {
     "matchManagers": ["maven"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
   {
-    // Manual review for a framework whose upgrades follow an LTS track, so a reviewer picks
-    // the target version instead of Renovate jumping to the newest minor.
-    // Example: Quarkus, see https://quarkus.io/releases/. Replace or delete.
+    // Quarkus follows an LTS track: a reviewer picks the target version. https://quarkus.io/releases/
     "matchManagers": ["maven"],
     "matchPackageNames": ["io.quarkus*"],
     "automerge": false
   },
   {
-    // Maven wrapper bumps (.mvn/wrapper/maven-wrapper.properties, mvnw) change the
-    // build tool for every developer, not just CI, so they stay on manual review.
-    // Variant when the team opted in: matchUpdateTypes ["patch", "minor"], automerge true.
+    // The wrapper is every developer's build tool, not just CI's.
     "matchManagers": ["maven-wrapper"],
     "automerge": false
   },
 
-  // ---------------------------------------------------------------- gradle
+  // --- gradle: patch and minor; majors and the wrapper stay manual
   {
     "matchManagers": ["gradle"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
   {
-    // Gradle wrapper bumps change the build tool for every developer, not just CI,
-    // so they stay on manual review. Variant when the team opted in: matchUpdateTypes
-    // ["patch", "minor"], automerge true.
+    // The wrapper is every developer's build tool, not just CI's.
     "matchManagers": ["gradle-wrapper"],
     "automerge": false
   },
 
-  // ---------------------------------------------------------------- dockerfile (base images)
+  // --- dockerfile: digest, patch and minor of the base images; majors stay manual
   {
-    // Base image bumps: the Konflux PR build builds the image and the tests run on
-    // it, so its check must be required. Digest updates are rebuilds of the same
-    // tag, the security-patch stream; patch and minor follow the registry's
-    // versioning. A new RHEL or JDK line is a major and stays on manual review.
+    // The Konflux PR build builds and tests the image. A digest update is a rebuild of
+    // the same tag; a new RHEL or JDK line is a major and stays on manual review.
     "matchManagers": ["dockerfile"],
     "matchUpdateTypes": ["digest", "patch", "minor"],
     "automerge": true
   },
   {
-    // Optional: pin every FROM line to tag@sha256 so rebuilds of the same tag show
-    // up as digest PRs. Renovate opens one manual pin PR first. Delete if the
-    // images are already pinned or the team chose tags only.
+    // Pins FROM lines to tag@sha256, so rebuilds of a tag arrive as digest PRs.
     "matchManagers": ["dockerfile"],
     "pinDigests": true
   },
 
-  // ---------------------------------------------------------------- gomod
+  // --- gomod: patch and minor, indirect dependencies included; majors stay manual
   {
     "matchManagers": ["gomod"],
     "matchUpdateTypes": ["patch", "minor"],
-    // MintMaker also enables updates of indirect dependencies, so they are covered too.
     "automerge": true
   },
   {
-    // Optional: keep indirect dependency bumps on manual review. Delete if the
-    // user is fine automerging them.
+    // Indirect dependencies stay on manual review.
     "matchManagers": ["gomod"],
     "matchDepTypes": ["indirect"],
     "automerge": false
   },
 
-  // ---------------------------------------------------------------- npm (pick one width)
-  // Width 3, an allow-list, is the "any manager" block at the end with "npm" as
-  // the manager. A grouped PR adds "groupName": "npm automerge" to the chosen block.
+  // --- npm: patch and minor; majors stay manual
   {
-    // Width 1: every patch and minor bump. Relies on MintMaker's release-age delay
-    // as the defense against a compromised release.
     "matchManagers": ["npm"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
   {
-    // Width 2: development dependencies only. The runtime dependency list never
-    // changes unattended, but build and test tooling does, and it runs in CI with
-    // whatever the job can reach and produces the shipped artifact.
+    // Development dependencies only: the runtime dependency list never changes unattended.
     "matchManagers": ["npm"],
     "matchDepTypes": ["devDependencies"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- python
+  // --- python: patch and minor; majors stay manual
   {
-    // Keep only the managers detected in the repo.
     "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry", "pep621"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- cargo
+  // --- cargo: patch and minor; majors stay manual
   {
     "matchManagers": ["cargo"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- bundler
+  // --- bundler: patch and minor; majors stay manual
   {
     "matchManagers": ["bundler"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- any manager: majors too
+  // majors of named packages, any manager
   {
-    // Major bumps of these packages automerge too: <the user's reason>.
-    // CI is the only gate on them, so the tests must cover their use.
-    // For GitHub Actions, one such block with "matchManagers": ["github-actions"]
-    // and "matchDepNames" instead of "matchPackageNames", as in the allow-list rule.
+    // Majors of these packages merge too: <the user's reason>. CI is the only gate.
     "matchManagers": ["<manager>"],
     "matchPackageNames": ["<package>", "<package>"],
     "matchUpdateTypes": ["major"],
     "automerge": true
   },
 
-  // ---------------------------------------------------------------- any manager: allow-list width
+  // allow-list width, any manager
   {
-    // For a library ecosystem where the team wants an allow-list instead of every
-    // patch and minor bump. Replace <manager> with the Renovate manager slug.
+    // Only these packages merge on their own; the rest of <manager> stays manual.
     "matchManagers": ["<manager>"],
     "matchPackageNames": ["<package>", "<package>"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -612,6 +572,32 @@ duplicate drifts out of sync.
   }
 ]
 ```
+
+How the answers map to the blocks:
+
+- Wrappers, when the user opted in: the wrapper rule becomes
+  `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with the
+  comment `// CI builds with the new wrapper on every PR.`, and the
+  separator line says the wrapper merges.
+- Manual-review packages: one rule per candidate kept or package named,
+  under its own manager and after that manager's rule, with the reason
+  as its comment, as in the Quarkus example: Spring Boot under `gradle`
+  or `maven`, Angular under `npm`, Django under the python managers.
+  Candidates folded into one menu option still get one rule each; none
+  when the user chose none.
+- Base images: drop the `pinDigests` rule when the images are already
+  pinned or the user kept tags only; drop the automerge rule when they
+  kept base images manual, and the separator line then says so.
+- Go: drop the indirect rule when the user automerges indirect
+  dependencies; the separator line says whether they are included.
+- npm: copy exactly one of the two rules; the allow-list width is the
+  "allow-list width" block with `npm` as the manager. A grouped PR adds
+  `"groupName": "npm automerge"` to the chosen rule, with the comment
+  `// One PR for every npm bump; it merges only when all of them pass.`
+- Python: keep only the managers the report detected.
+- Majors: one block per manager; for GitHub Actions use `matchDepNames`
+  instead of `matchPackageNames`. The user's reason from the follow-up
+  is the comment.
 
 ## Step 8: Summary
 

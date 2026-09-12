@@ -46,7 +46,7 @@ you leave out, stays on manual review, exactly as today.
   app skip an approval rule and nothing else when the branch has one, and
   asks you to confirm the settings are in place before it opens the PR.
 - **One readable file, no shared preset.** The generated config is small,
-  commented line by line, and complete on its own. What merges unattended
+  commented where a decision was made, and complete on its own. What merges unattended
   in a repository stays that repository's decision.
 
 ## Quick start
