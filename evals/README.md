@@ -1,4 +1,4 @@
-# Walkthrough evals
+# Evals
 
 `claude plugin eval` runs a single prompt in a headless session that has no
 `AskUserQuestion` tool, so it cannot get past the first menu of the setup

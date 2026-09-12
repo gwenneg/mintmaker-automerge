@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Walkthrough evals for the setup skill.
+// Evals for the setup skill.
 //
 // Each fixture under fixtures/ is a small Konflux-onboarded repository. The
 // driver copies it to a temp dir, runs `/mintmaker-automerge:setup` through

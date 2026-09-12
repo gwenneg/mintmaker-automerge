@@ -2,7 +2,7 @@
   "name": "mintmaker-automerge-evals",
   "private": true,
   "type": "module",
-  "description": "Walkthrough evals: drive the setup skill through the Agent SDK with a scripted user",
+  "description": "Evals: drive the setup skill through the Agent SDK with a scripted user",
   "scripts": {
     "test": "node run.mjs"
   },

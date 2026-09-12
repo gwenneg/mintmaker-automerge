@@ -1,4 +1,4 @@
-# Walkthrough evals: drive the setup skill through the Agent SDK with a
+# Evals: drive the setup skill through the Agent SDK with a
 # scripted user, on the fixture repositories under evals/. See evals/README.md.
 # Needs the CLAUDE_CODE_OAUTH_TOKEN secret (claude setup-token); the job
 # skips itself without it. Manual trigger for now: the model is not
@@ -16,7 +16,7 @@ on:
         default: ''
 
 jobs:
-  walkthrough:
+  evals:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
@@ -34,13 +34,13 @@ jobs:
           if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not available to this run, skipping the walkthrough evals"
+            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not available to this run, skipping the evals"
           fi
       - name: Install the Agent SDK
         if: steps.credential.outputs.present == 'true'
         working-directory: evals
         run: npm ci
-      - name: Run the walkthrough evals
+      - name: Run the evals
         if: steps.credential.outputs.present == 'true'
         working-directory: evals
         run: node run.mjs ${{ inputs.fixtures }}
