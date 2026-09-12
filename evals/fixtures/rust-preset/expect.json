@@ -67,7 +67,10 @@
   ],
   "files": {
     ".github/renovate.json5": {
-      "exists": true
+      "exists": true,
+      "contains": [
+        "https://github.com/gwenneg/mintmaker-automerge"
+      ]
     },
     "renovate.jsonc": {
       "exists": false

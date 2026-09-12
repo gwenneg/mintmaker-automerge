@@ -46,7 +46,10 @@
   ],
   "files": {
     "renovate.jsonc": {
-      "exists": true
+      "exists": true,
+      "contains": [
+        "https://github.com/gwenneg/mintmaker-automerge"
+      ]
     },
     ".github/dependabot.yml": {
       "exists": false

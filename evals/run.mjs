@@ -85,6 +85,8 @@ const stepOf = (headers, stepsSeen) => {
   const n = STEP_OF[headers[0]];
   return n !== undefined && stepsSeen.has(n) ? n : undefined;
 };
+// Headers the model shortens to fit the tool's 12-character limit.
+const HEADER_ALIAS = { Workflow: "Base image workflow", "Never merge": "Never automerge", "Pin images": "Pin base images", Branch: "Default branch" };
 // After these answers the reply may legitimately open with something other
 // than the next step header: Step 6 ends with its two notes and a closing
 // line, Step 8 goes on with the write phase, the Checks answer brings the
@@ -140,8 +142,9 @@ function answerFor(q, expect, state, followUp) {
 
 const squash = (s) => s.replace(/\s+/g, "");
 
-// expected menus vs the menus seen: "*" eats one or more calls with unnamed headers
-function menusMatch(expected, got) {
+// expected menus vs the menus seen: "*" eats one or more follow-up calls. A prescribed menu that
+// came before its step header was classified as a follow-up; matched by name here, it is reported.
+function menusMatch(expected, got, early) {
   let i = 0;
   for (const e of expected) {
     if (e === "*") {
@@ -150,6 +153,7 @@ function menusMatch(expected, got) {
       if (n === 0) return false;
     } else {
       if (i >= got.length || [...e].sort().join("+") !== [...got[i].headers].sort().join("+")) return false;
+      if (got[i].followUp && got[i].headers[0] in STEP_OF) early.push(got[i]);
       i++;
     }
   }
@@ -207,10 +211,10 @@ async function runFixture(name) {
             trace.push({ kind: "text", text: b.text });
             const head = b.text.match(/^###.*$/m)?.[0] ?? b.text.split("\n")[0];
             log(`[text] ${head.slice(0, 100)} (${b.text.length} chars)`);
-          } else if (b.type === "tool_use" && b.name === "AskUserQuestion" && !(b.input.questions ?? []).every((q) => q.header && q.options)) {
+          } else if (b.type === "tool_use" && b.name === "AskUserQuestion" && !(b.input.questions ?? []).every((q) => q.header && q.options && q.question !== "placeholder")) {
             log(`[malformed menu] ${JSON.stringify(b.input).slice(0, 120)}`); // rejected by the tool before anyone sees it
           } else if (b.type === "tool_use" && b.name === "AskUserQuestion") {
-            const headers = b.input.questions.map((q) => q.header);
+            const headers = b.input.questions.map((q) => HEADER_ALIAS[q.header] ?? q.header);
             const step = stepOf(headers, stepsSeen);
             trace.push({ kind: "menu", headers, step, followUp: step === undefined });
             log(`[menu] ${headers.join(" | ")}`);
@@ -254,7 +258,9 @@ async function runFixture(name) {
       check(i > pos, `Step ${n}/10 header missing or out of order`);
       if (i > pos) pos = i;
     }
-    check(menusMatch(expect.menus, menus), `menus differ\n        expected: ${showMenus(expect.menus)}\n        got:      ${showMenus(menus)}`);
+    const early = [];
+    check(menusMatch(expect.menus, menus, early), `menus differ\n        expected: ${showMenus(expect.menus)}\n        got:      ${showMenus(menus)}`);
+    for (const m of early) check(false, `menu ${m.headers.join("|")} came before the Step ${STEP_OF[m.headers[0]]}/10 screen`);
     for (let i = 0; i < trace.length; i++) {
       const t = trace[i];
       if (t.kind !== "menu") continue;
