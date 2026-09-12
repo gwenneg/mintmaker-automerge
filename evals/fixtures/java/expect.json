@@ -1,0 +1,91 @@
+{
+  "repo": "example/java-demo",
+  "defaultBranchKnown": true,
+  "config": "renovate.jsonc",
+  "menus": [
+    [
+      "Ecosystems"
+    ],
+    [
+      "Location"
+    ],
+    [
+      "Scope",
+      "Never automerge",
+      "Majors"
+    ],
+    [
+      "Pin actions",
+      "Allow-list",
+      "Majors"
+    ],
+    "*",
+    [
+      "Base images",
+      "Pin base images",
+      "Wrappers"
+    ],
+    [
+      "Pipeline"
+    ],
+    [
+      "Dependabot"
+    ],
+    [
+      "Write it"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Bypass"
+    ],
+    [
+      "Ship it"
+    ]
+  ],
+  "files": {
+    "renovate.jsonc": {
+      "exists": true
+    },
+    ".github/dependabot.yml": {
+      "exists": false
+    }
+  },
+  "configContains": [
+    "\"matchManagers\": [\"maven\"]",
+    "io.quarkus",
+    "maven-wrapper",
+    "\"matchManagers\": [\"dockerfile\"]",
+    "pinDigests",
+    "helpers:pinGitHubActionDigests",
+    "actions/checkout",
+    "actions/setup-java",
+    "\"tekton\"",
+    "\"matchUpdateTypes\": [\"major\"]"
+  ],
+  "configLacks": [
+    "konflux-ci/mintmaker//config",
+    "baseBranchPatterns",
+    "enabledManagers"
+  ],
+  "answers": {
+    "Majors": {
+      "sequence": [
+        "No package",
+        "Yes, for actions",
+        {
+          "text": "actions/checkout: a major only changes the Node runtime it needs, and CI runs it on every PR"
+        }
+      ]
+    }
+  },
+  "followups": [
+    {
+      "match": "action|major|why",
+      "answer": {
+        "text": "actions/checkout: a major only changes the Node runtime it needs, and CI runs it on every PR"
+      }
+    }
+  ]
+}

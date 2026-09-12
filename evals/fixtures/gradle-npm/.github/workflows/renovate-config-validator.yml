@@ -1,0 +1,14 @@
+name: Renovate Config Validator
+on:
+  pull_request:
+    paths:
+      - .github/renovate.jsonc
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: konflux-ci/renovate-config-validator-action@772ce0f2d37cd13ad80408a4902c7a17f3191e3a # main
+        with:
+          config_file: .github/renovate.jsonc
+          strict: true

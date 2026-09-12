@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: python-demo-on-pull-request
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" && files.all.exists(x, x.matches('^(src|pyproject.toml|requirements.txt)'))
+    build.appstudio.openshift.io/repo: https://github.com/example/python-demo?rev={{revision}}
+  labels:
+    appstudio.openshift.io/application: python-demo
+    appstudio.openshift.io/component: python-demo
+    pipelines.appstudio.openshift.io/type: build
+spec:
+  params:
+    - name: git-url
+      value: "{{source_url}}"
+    - name: revision
+      value: "{{revision}}"
+  pipelineRef:
+    name: docker-build-oci-ta

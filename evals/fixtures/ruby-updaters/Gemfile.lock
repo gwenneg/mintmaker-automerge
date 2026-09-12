@@ -1,0 +1,4 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    sinatra (4.0.0)

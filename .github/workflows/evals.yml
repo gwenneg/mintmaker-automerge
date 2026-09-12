@@ -1,0 +1,53 @@
+# Evals: drive the setup skill through the Agent SDK with a
+# scripted user, on the fixture repositories under evals/. See evals/README.md.
+# Needs the CLAUDE_CODE_OAUTH_TOKEN secret (claude setup-token); the job
+# skips itself without it. Manual trigger for now: the model is not
+# deterministic, so a red run is a transcript to read before it is a
+# verdict. Add a pull_request trigger on skills/** and evals/** once a
+# few manual runs come out green.
+name: Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixtures:
+        description: 'Fixtures to run, space-separated; empty runs all'
+        required: false
+        default: ''
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: evals/package-lock.json
+      - name: Check for a credential
+        id: credential
+        run: |
+          if [ -n "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::CLAUDE_CODE_OAUTH_TOKEN is not available to this run, skipping the evals"
+          fi
+      - name: Install the Agent SDK
+        if: steps.credential.outputs.present == 'true'
+        working-directory: evals
+        run: npm ci
+      - name: Run the evals
+        if: steps.credential.outputs.present == 'true'
+        working-directory: evals
+        run: node run.mjs ${{ inputs.fixtures }}
+      - name: Upload transcripts
+        if: always() && steps.credential.outputs.present == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: eval-results
+          path: evals/results/
+          if-no-files-found: ignore

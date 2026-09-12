@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: ruby-updaters-on-pull-request
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
+    build.appstudio.openshift.io/repo: https://github.com/example/ruby-updaters?rev={{revision}}
+  labels:
+    appstudio.openshift.io/application: ruby-updaters
+    appstudio.openshift.io/component: ruby-updaters
+    pipelines.appstudio.openshift.io/type: build
+spec:
+  params:
+    - name: git-url
+      value: "{{source_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: dockerfile
+      value: Containerfile
+  pipelineRef:
+    name: docker-build-oci-ta

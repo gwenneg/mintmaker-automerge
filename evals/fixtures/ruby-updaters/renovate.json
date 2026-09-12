@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Puma majors change the config file format, upgrade by hand",
+      "matchPackageNames": ["puma"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
+}

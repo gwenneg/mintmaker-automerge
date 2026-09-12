@@ -1,0 +1,6 @@
+FROM registry.access.redhat.com/ubi9/ubi:9.4@sha256:6a3d5d5b4a9c6e7f8d9c0b1a2f3e4d5c6b7a8f9e0d1c2b3a4f5e6d7c8b9a0f1e AS builder
+RUN dnf -y install cargo openssl-devel && cargo build --release
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4@sha256:1c8a7f3b5e2d9c6b4a0f7e3d1c2b9a8f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b
+COPY --from=builder /target/release/rust-preset /usr/local/bin/
+ENTRYPOINT ["rust-preset"]

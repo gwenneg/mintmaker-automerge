@@ -1,0 +1,8 @@
+FROM registry.access.redhat.com/ubi9/go-toolset:1.22@sha256:8f2b4a5b7d9d0d3e2b1c9a6f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d AS builder
+WORKDIR /src
+COPY . .
+RUN go build -o /out/demo ./cmd/demo
+
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4@sha256:1c8a7f3b5e2d9c6b4a0f7e3d1c2b9a8f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b
+COPY --from=builder /out/demo /usr/local/bin/demo
+ENTRYPOINT ["/usr/local/bin/demo"]

@@ -1,0 +1,98 @@
+{
+  "repo": "example/rust-preset",
+  "defaultBranchKnown": true,
+  "config": ".github/renovate.json5",
+  "menus": [
+    [
+      "Ecosystems"
+    ],
+    [
+      "Scope",
+      "Never automerge",
+      "Majors"
+    ],
+    "*",
+    [
+      "Base images"
+    ],
+    [
+      "Pipeline"
+    ],
+    [
+      "Write it"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Bypass"
+    ],
+    [
+      "Ship it"
+    ]
+  ],
+  "answers": {
+    "Never automerge": {
+      "sequence": [
+        "I'll name them",
+        {
+          "text": "openssl, its bumps need a matching system library in the base image"
+        }
+      ]
+    },
+    "Majors": {
+      "sequence": [
+        "Yes, for packages",
+        {
+          "text": "serde and clap: both are fully exercised by the test suite, a breaking major fails CI"
+        }
+      ]
+    },
+    "Base images": "Keep them manual",
+    "Pipeline": "Saturday"
+  },
+  "followups": [
+    {
+      "match": "never|manual|exclude|stay",
+      "answer": {
+        "text": "openssl, its bumps need a matching system library in the base image"
+      }
+    },
+    {
+      "match": "major|why",
+      "answer": {
+        "text": "serde and clap: both are fully exercised by the test suite, a breaking major fails CI"
+      }
+    }
+  ],
+  "files": {
+    ".github/renovate.json5": {
+      "exists": true
+    },
+    "renovate.jsonc": {
+      "exists": false
+    }
+  },
+  "textContains": [
+    "Skipped: no GitHub workflows",
+    "merge-confidence"
+  ],
+  "configContains": [
+    "\"matchManagers\": [\"cargo\"]",
+    "openssl",
+    "serde",
+    "clap",
+    "\"matchUpdateTypes\": [\"major\"]",
+    "tokio",
+    "whitesource/merge-confidence",
+    "\"tekton\""
+  ],
+  "configLacks": [
+    "konflux-ci/mintmaker//config",
+    "minimumReleaseAge",
+    "enabledManagers",
+    "\"at any time\"",
+    "\"matchManagers\": [\"dockerfile\"]",
+    "github-actions"
+  ]
+}

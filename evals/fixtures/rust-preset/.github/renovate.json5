@@ -1,0 +1,17 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+    "github>whitesource/merge-confidence:beta",
+    "github>konflux-ci/mintmaker//config/renovate/renovate.json",
+  ],
+  minimumReleaseAge: "1 day",
+  enabledManagers: ["cargo", "dockerfile"],
+  packageRules: [
+    {
+      // tokio moves fast, one PR per week is enough
+      matchPackageNames: ["tokio"],
+      schedule: ["before 6am on monday"],
+    },
+  ],
+}
