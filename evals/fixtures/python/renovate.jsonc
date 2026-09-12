@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      // Gunicorn is pinned by the platform team, bump it by hand.
+      "matchPackageNames": ["gunicorn"],
+      "enabled": false
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: rust-preset-on-pull-request
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
+    build.appstudio.openshift.io/repo: https://github.com/example/rust-preset?rev={{revision}}
+  labels:
+    appstudio.openshift.io/application: rust-preset
+    appstudio.openshift.io/component: rust-preset
+    pipelines.appstudio.openshift.io/type: build
+spec:
+  params:
+    - name: git-url
+      value: "{{source_url}}"
+    - name: revision
+      value: "{{revision}}"
+    - name: dockerfile
+      value: Containerfile
+  pipelineRef:
+    name: docker-build-oci-ta

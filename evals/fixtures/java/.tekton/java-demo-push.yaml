@@ -1,0 +1,12 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: java-demo-on-push
+  annotations:
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
+  labels:
+    appstudio.openshift.io/application: java-demo
+    appstudio.openshift.io/component: java-demo
+spec:
+  pipelineRef:
+    name: docker-build-oci-ta

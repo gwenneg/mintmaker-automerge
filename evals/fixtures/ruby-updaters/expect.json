@@ -1,0 +1,114 @@
+{
+  "repo": "example/ruby-updaters",
+  "defaultBranchKnown": false,
+  "config": "renovate.json",
+  "menus": [
+    [
+      "Ecosystems",
+      "Default branch"
+    ],
+    [
+      "Rename"
+    ],
+    [
+      "Scope",
+      "Never automerge",
+      "Majors"
+    ],
+    [
+      "Pin actions",
+      "Allow-list",
+      "Majors"
+    ],
+    [
+      "Base images",
+      "Pin base images"
+    ],
+    [
+      "Pipeline"
+    ],
+    [
+      "Base image workflow",
+      "Dependabot"
+    ],
+    [
+      "Write it"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Bypass"
+    ],
+    [
+      "Ship it"
+    ]
+  ],
+  "answers": {
+    "Rename": "Keep .json",
+    "Pin actions": "Don't pin",
+    "Allow-list": {
+      "labels": [
+        "GitHub",
+        "Third-party"
+      ]
+    },
+    "Checks": {
+      "sequence": [
+        "help me understand",
+        "I read it"
+      ]
+    },
+    "Pin base images": "Keep tags only"
+  },
+  "files": {
+    "renovate.json": {
+      "exists": true
+    },
+    "renovate.jsonc": {
+      "exists": false
+    },
+    ".github/dependabot.yml": {
+      "exists": true,
+      "contains": [
+        "composer"
+      ],
+      "lacks": [
+        "bundler",
+        "docker",
+        "legacy"
+      ]
+    },
+    ".github/workflows/bump-base-image.yml": {
+      "exists": false
+    },
+    ".github/workflows/ci.yml": {
+      "exists": true,
+      "contains": [
+        "actions/checkout@v4"
+      ]
+    }
+  },
+  "textContains": [
+    "directory missing",
+    "alerts"
+  ],
+  "configContains": [
+    "\"matchManagers\": [\"bundler\"]",
+    "puma",
+    "ruby/setup-ruby",
+    "actions/checkout",
+    "\"matchManagers\": [\"dockerfile\"]",
+    "\"tekton\""
+  ],
+  "configLacks": [
+    "helpers:pinGitHubActionDigests",
+    "konflux-ci/mintmaker//config",
+    "enabledManagers",
+    "composer",
+    "pinDigests"
+  ]
+}

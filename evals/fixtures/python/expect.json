@@ -1,0 +1,58 @@
+{
+  "repo": "example/python-demo",
+  "defaultBranchKnown": false,
+  "config": "renovate.jsonc",
+  "menus": [
+    [
+      "Ecosystems",
+      "Default branch"
+    ],
+    [
+      "Scope",
+      "Never automerge",
+      "Majors"
+    ],
+    [
+      "Pin actions",
+      "Allow-list",
+      "Majors"
+    ],
+    [
+      "Pipeline"
+    ],
+    [
+      "Write it"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Bypass"
+    ],
+    [
+      "Ship it"
+    ]
+  ],
+  "files": {
+    "renovate.jsonc": {
+      "exists": true
+    }
+  },
+  "configContains": [
+    "pep621",
+    "pip_requirements",
+    "django",
+    "gunicorn",
+    "helpers:pinGitHubActionDigests",
+    "actions/checkout",
+    "actions/setup-python",
+    "\"tekton\""
+  ],
+  "configLacks": [
+    "konflux-ci/mintmaker//config",
+    "baseBranchPatterns",
+    "pinDigests",
+    "dockerfile",
+    "enabledManagers"
+  ]
+}

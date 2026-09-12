@@ -1,0 +1,16 @@
+name: Bump base image
+on:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+jobs:
+  bump:
+    name: Bump the base image tag
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find the newest ruby-33 tag and rewrite the FROM line
+        run: ./scripts/bump-base-image.sh
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore: bump base image"

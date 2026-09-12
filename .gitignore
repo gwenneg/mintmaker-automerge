@@ -23,3 +23,7 @@
 .fuse_hidden*
 .nfs*
 .Trash-*
+
+# walkthrough evals
+evals/node_modules/
+evals/results/

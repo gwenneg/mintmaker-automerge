@@ -1,0 +1,79 @@
+{
+  "repo": "example/go-demo",
+  "defaultBranchKnown": true,
+  "config": "renovate.jsonc",
+  "menus": [
+    [
+      "Ecosystems"
+    ],
+    [
+      "Rename"
+    ],
+    [
+      "Scope",
+      "Never automerge",
+      "Majors"
+    ],
+    "*",
+    [
+      "Allow-list",
+      "Majors"
+    ],
+    [
+      "Base images"
+    ],
+    [
+      "Pipeline",
+      "Go indirect"
+    ],
+    [
+      "Write it"
+    ],
+    [
+      "Checks"
+    ],
+    [
+      "Bypass"
+    ],
+    [
+      "Ship it"
+    ]
+  ],
+  "files": {
+    "renovate.jsonc": {
+      "exists": true
+    },
+    "renovate.json": {
+      "exists": false
+    }
+  },
+  "configContains": [
+    "\"matchManagers\": [\"gomod\"]",
+    "golang.org/x",
+    "\"matchManagers\": [\"dockerfile\"]",
+    "actions/checkout",
+    "actions/setup-go",
+    "\"tekton\"",
+    "github.com/spf13/cobra",
+    "golang.org/x/sync"
+  ],
+  "configLacks": [
+    "konflux-ci/mintmaker//config",
+    "baseBranchPatterns",
+    "helpers:pinGitHubActionDigests",
+    "pinDigests",
+    "enabledManagers",
+    "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}"
+  ],
+  "answers": {
+    "Scope": "Only packages I'll name"
+  },
+  "followups": [
+    {
+      "match": "name|package|allow|which",
+      "answer": {
+        "text": "github.com/spf13/cobra and golang.org/x/sync"
+      }
+    }
+  ]
+}
