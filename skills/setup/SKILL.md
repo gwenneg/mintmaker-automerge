@@ -157,10 +157,14 @@ Three cases, each one screen:
 - **A `.jsonc` or `.json5` file exists.** Print the table verbatim, close
   with one line saying the file stays where it is, and go on to Step 3
   in the same message: there is no decision to ask for here, and a menu
-  with a single option is rejected by the tool. Its two ⚠️ rows are the things that must go: an `extends` of
+  with a single option is rejected by the tool. Every ⚠️ row is something
+  Step 8 removes: an `extends` of
   `github>konflux-ci/mintmaker//config/renovate/renovate.json`, since
   MintMaker already applies that file globally and its docs say not to
-  copy it, and `baseBranchPatterns`, which MintMaker sets per component.
+  copy it; `baseBranchPatterns`, which MintMaker sets per component;
+  `minimumReleaseAge`, which MintMaker sets globally; and
+  `enabledManagers`, which would replace MintMaker's whole manager list,
+  unless the user says that was intended.
   When a row names a shared preset from another repo, its content is in
   the report too, fetched at load; report what it sets under the table,
   in particular any `minimumReleaseAge` shorter than MintMaker's. Only
@@ -654,9 +658,10 @@ After the "Write the files" answer, and only then, the write phase, in
 this order:
 
 1. Build the config file, or edit the existing one, rename it when Step 2
-   said so, and show the diff. When migrating an existing config, list
-   what you removed or restructured and why, so a rewrite never quietly
-   drops a rule the user still wants.
+   said so, drop every ⚠️ row of the Step 2 table, and show the diff.
+   When migrating an existing config, list what you removed or
+   restructured and why, so a rewrite never quietly drops a rule the
+   user still wants.
 2. Apply the Step 7 decisions: remove or narrow `dependabot.yml`, remove
    the base-image workflow, and update any doc that describes what they
    covered. Files those tools wrote, such as a digest tracking file, go
