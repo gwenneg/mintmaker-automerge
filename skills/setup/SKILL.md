@@ -144,8 +144,8 @@ branch** question rather than assuming `main`.
 
 ## Step 2: Renovate config file
 
-The report names every config file found, with its notable lines and its
-full content, and its last sections hold the table for this step: points
+The report names every config file found, with its full content and the
+other files that name it, and its last sections hold the table for this step: points
 of attention only, what gets removed, what is redundant, which presets
 were read, or a single plain line when there is nothing of the kind. Rules
 that simply stay are one line under it, not rows. No need to read the
@@ -359,8 +359,8 @@ The table has three columns: updater, what it covers, status. The rows:
   workflow path and the `FROM` lines it touches. Status: ⚠️ overlaps
   Renovate when the user chose to automerge base images in Step 5,
   otherwise "not covered by Renovate" without a mark.
-- One row per `dependabot.yml` line of the same report section, with
-  ecosystem and directory. Status: ⚠️ overlaps Renovate, ✅ not covered by
+- One row per entry listed under the report's `dependabot.yml: found`
+  line, with ecosystem and directory. Status: ⚠️ overlaps Renovate, ✅ not covered by
   Renovate, or ⚠️ directory missing. A stale entry pointing at a deleted
   directory covers nothing, since Dependabot silently finds no files
   there; flag it whatever the overlap says, the user may not know.
