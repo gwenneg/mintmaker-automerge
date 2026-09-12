@@ -100,8 +100,10 @@ function makeRepo(name, expect) {
   fs.cpSync(path.join(fixturesDir, name), dir, { recursive: true });
   fs.rmSync(path.join(dir, "expect.json"));
   git(dir, "init", "-q", "-b", "main");
+  git(dir, "config", "user.name", "eval"); // a developer's machine has an identity; a CI runner does not
+  git(dir, "config", "user.email", "eval@example.com");
   git(dir, "add", "-A");
-  git(dir, "-c", "user.name=eval", "-c", "user.email=eval@example.com", "commit", "-q", "-m", "fixture");
+  git(dir, "commit", "-q", "-m", "fixture");
   git(dir, "remote", "add", "origin", `https://github.com/${expect.repo}.git`);
   if (expect.defaultBranchKnown) {
     git(dir, "update-ref", "refs/remotes/origin/main", "HEAD");
