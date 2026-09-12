@@ -275,10 +275,11 @@ if [ -z "$BASES" ]; then
   say ""; say "== Base images table (print verbatim in Step 5)"; say "base_images: none"
 else
   table "Base images table (print verbatim in Step 5)" "| Base image | Container files | Pinned by |"
-  # one row per image, with the files that use it, in order of first appearance
+  # one row per image, with up to three of the files that use it, in order of first appearance
   say "$BASES" | awk -F': ' '{ img=$2; sub(/ \([^)]*\)$/, "", img); if (!(img in seen)) { seen[img]=1; order[++k]=img }
-      if (index(files[img], "`" $1 "`") == 0) files[img] = files[img] (files[img] == "" ? "" : ", ") "`" $1 "`" }
+      if (index(" " files[img] " ", " " $1 " ") == 0) files[img] = files[img] (files[img] == "" ? "" : " ") $1 }
     END { for (i=1; i<=k; i++) print order[i] "\t" files[order[i]] }' | while IFS="$(printf '\t')" read -r img files; do
+    files=$(printf '%s' "$files" | ticks)
     case "$img" in
       *@sha256:*) pin="digest, updates arrive as digest PRs"; shown=$(printf '%s' "$img" | sed -E 's/@sha256:[0-9a-f]{12}[0-9a-f]*/@sha256:…/') ;;
       *:latest)   pin="tag \`latest\` ⚠️ nothing to bump; only a digest pin brings updates"; shown="$img" ;;
