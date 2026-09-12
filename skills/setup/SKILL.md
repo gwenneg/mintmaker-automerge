@@ -35,7 +35,8 @@ and emoji, and the AskUserQuestion tool draws a selection menu. Use both.
   questions, and when the previous step ended with a closing line.
 - **Every decision is an AskUserQuestion.** Recommended option first,
   with "(Recommended)" inside its label, as in `Rename to renovate.jsonc
-  (Recommended)`: the mark in the description does not show. Each
+  (Recommended)`: the mark in the description does not show, and
+  exactly one option per question carries it, in a multi-select too. Each
   option's description states its consequence in one line. Use `multiSelect` for lists such as actions and checks. When a step
   has several independent questions, put them in one AskUserQuestion call,
   up to four, so the user answers a screen rather than a drip. Never ask a
@@ -136,7 +137,7 @@ rescan; if the report is missing entirely, detect by hand from
 `git ls-files`, never with `find`, which walks `node_modules/`, `target/`
 and vendored directories, and lay the result out the same way.
 
-Ask, header "Ecosystems": Looks right / Needs a correction,
+Ask, header "Ecosystems": Looks right (Recommended) / Needs a correction,
 where the user types the fix as the free-text answer. Auto-detection can
 be wrong, for instance a `pom.xml` kept around for a subproject nobody
 builds anymore. If the default branch is `unknown`, add a **Default
@@ -705,6 +706,12 @@ on the action's repository being the simplest.
 💡 A required check that doesn't run on every PR stays "Pending"
 forever and blocks the merge, which is why this workflow must never be
 required. Step 9 comes back to it.
+
+The write phase ends there, with no question: no "does this look
+right", no confirmation of the files, and no question about the pull
+request, which is Step 10's. The next message opens with the Step 9
+header and the required-checks screen below, and the Checks menu comes
+only once that screen is printed.
 
 ## Step 9: GitHub settings
 
