@@ -36,6 +36,11 @@ Recommend the strongest gate the repo already has the pieces for:
   file, so requiring it would block every dependency PR forever, and
   `renovate/stability-days`, Renovate's own release-age check, which shows
   up in the list of checks of a MintMaker PR but never on a human's PR.
+  The distinction GitHub draws: a workflow skipped by a `paths:` or
+  `branches:` filter leaves its checks "Pending", while a job skipped by an
+  `if:` condition reports "Success" and satisfies the requirement. A check
+  that only matters for some files can stay required if the filter moves
+  from the workflow's `paths:` to a job-level `if:`.
 
 Configure this under the repo's **Settings → Rules → Rulesets** → the
 ruleset covering the target branch → **Require status checks to pass** →
