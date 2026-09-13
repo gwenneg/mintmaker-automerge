@@ -34,10 +34,9 @@ you leave out, stays on manual review, exactly as today.
   or AI, has to catch a bad release in the moment.
 - **Built on MintMaker's release-age delay.** MintMaker's
   [global config](https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json)
-  holds back any release younger than 3 days before opening a PR, which
-  is the window in which compromised releases are usually caught and
-  pulled. The plugin inherits that delay rather than restating it, so it
-  never drifts.
+  holds back a fresh release before opening a PR, for the window in which
+  compromised releases are usually caught and pulled. The plugin inherits
+  that delay rather than restating it, so it never drifts.
 - **GitHub Actions are allow-listed by name.** Actions run arbitrary code
   in CI, so each one is vetted individually, and only version bumps of
   SHA-pinned actions qualify. A moved tag never merges on its own.
@@ -225,18 +224,20 @@ explains every one of them.
 
 | Layer | What it does | Who provides it |
 |---|---|---|
-| Release-age delay | No PR for a release younger than 3 days. Covers every update, automerged or not. | MintMaker's global config, inherited |
+| Release-age delay | No PR for a fresh release until MintMaker's delay has passed. Covers every update that has a publish date, automerged or not. | MintMaker's global config, inherited |
 | Update-type filter | `patch` and `minor` qualify by default, plus `digest` for base images. Majors stay manual unless you name the package; action digests, pins and lock-file maintenance always do. | The generated rules |
 | Allow-list for GitHub Actions | Each action is vetted by name, and only SHA-pinned actions can automerge safely. | The generated rules, plus SHA pinning |
 | Manual-review list | Packages you name stay manual whatever the update type. | Your answers |
-| Required status checks | GitHub's auto-merge waits for required checks only. Without them, a PR can merge before CI even starts. | You, in the branch ruleset |
+| Required status checks | GitHub's auto-merge waits for required checks only: a check that is not required can still be running, or failing, when the PR merges. | You, in the branch ruleset |
 | Scoped bypass | The Konflux app skips the approval rule only, in "For pull requests only" mode. It still has to pass required checks. | You, in the branch ruleset |
 
 Two exceptions to know. Vulnerability fix PRs skip the release-age delay,
 so a patch or minor fix in an automerged ecosystem merges as soon as CI
-passes. And the delay treats a release without a publish date as old
-enough, because MintMaker sets `minimumReleaseAgeBehaviour` to
-`timestamp-optional`.
+passes. And the delay only applies to releases that have a publish date,
+because MintMaker sets `minimumReleaseAgeBehaviour` to
+`timestamp-optional`: Renovate only learns image publish dates from Docker
+Hub, so a base image from `registry.access.redhat.com` or `quay.io`, and
+the Konflux task bundles, get no delay at all.
 
 What the plugin never does: change a GitHub setting through the API, push
 or open a PR without your confirmation, fetch example configs from other
@@ -247,7 +248,7 @@ repositories, or set `minimumReleaseAge` in your file.
 - MintMaker runs every 4 hours. A PR opens on one run and merges on a
   later one, once CI passed and the branch is up to date. Hours, not
   minutes.
-- A fresh release shows up at least 3 days after publication, with a
+- A fresh release shows up once the release-age delay has passed, with a
   passing `renovate/stability-days` check. Nothing lists the updates being
   held, since MintMaker disables Renovate's dependency dashboard.
 - The PR body says `Automerge: Enabled` when the rules matched. When it

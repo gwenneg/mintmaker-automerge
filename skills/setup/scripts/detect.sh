@@ -42,13 +42,15 @@ say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
 say "== Ecosystems (manager: first matching files)"
-ROWS=""
+ROWS=""; ALLF=""
 row() { ROWS="$ROWS| $1 | $2 |
 "; }
 # Up to three files in backticks, then "+N" for the rest.
 ticks() { awk '{ s=""; for (i=1;i<=NF && i<=3;i++) s = s (i>1?", ":"") "`" $i "`"; if (NF>3) s = s ", +" NF-3; print s }'; }
 # eco <manager> <regex> <display name>
 eco() {
+  ALLF="$ALLF$(list "$2")
+"
   f=$(list "$2" | head -5 | tr '\n' ' ')
   [ -n "$f" ] || return 0
   say "$1: $f"
@@ -66,6 +68,8 @@ eco pipenv '(^|/)Pipfile$' "Pipenv"
 list '(^|/)pyproject\.toml$' | while read -r f; do
   if grep -q '^\[tool\.poetry\]' "$f"; then say "poetry: $f"; else say "pep621: $f"; fi
 done
+ALLF="$ALLF$(list '(^|/)pyproject\.toml$')
+"
 pyproj=$(list '(^|/)pyproject\.toml$' | head -5 | tr '\n' ' ')
 [ -n "$pyproj" ] && row "Python, pyproject" "$(printf '%s' "$pyproj" | ticks)"
 eco cargo '(^|/)Cargo\.toml$' "Cargo"
@@ -77,6 +81,9 @@ eco helmv3 '(^|/)Chart\.yaml$' "Helm"
 eco terraform '\.tf$' "Terraform"
 [ "$konflux" = yes ] && row "Konflux pipeline" "\`.tekton/\`, $n file$([ "$n" = 1 ] || printf s)"
 [ -n "$ROWS" ] || say "(none)"
+# Dependency files Renovate never reads: the ignorePaths of config:recommended, which MintMaker extends.
+ign=$(printf '%s' "$ALLF" | grep -E '(^|/)(node_modules|bower_components|vendor|examples|__tests__|test|tests|__fixtures__)/' | sort -u | tr '\n' ' ')
+say "ignored_by_renovate: ${ign:-none}"
 
 # Manual-review candidates, frameworks with their own upgrade track: listed in the Screens section.
 CANDS=""

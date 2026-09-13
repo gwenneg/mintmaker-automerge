@@ -44,8 +44,8 @@ branch and no PR. Renovate's minimum-release-age docs: with `strict`,
 is old enough, with that check already passing, and automerge proceeds
 from there. Two consequences:
 
-- The delay covers every update, whether it automerges or waits for a
-  human.
+- The delay covers every update that has a publish date, whether it
+  automerges or waits for a human; the limit below says which have none.
 - Updates held by the delay are invisible: Renovate lists them on the
   dependency dashboard, and MintMaker's global config disables it.
 
