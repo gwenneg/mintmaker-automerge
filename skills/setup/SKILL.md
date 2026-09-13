@@ -30,7 +30,7 @@ A step closes with a plain line only where this file spells one out, because it 
 The recommended option comes first with "(Recommended)" inside its label, as in `Rename to renovate.jsonc (Recommended)`, exactly one per question, in a multi-select too; the mark does not show in a description.
 Each option's description states its consequence in one line.
 Never offer a single option: the tool rejects it.
-A follow-up for typed input, package names or a reason, is an AskUserQuestion call as well, the user typing the answer in place of an option; a question asked as plain text ends the reply with nothing to answer.
+A follow-up for typed input, package names or a reason, is an AskUserQuestion call as well, with two options: `I'll type them (Recommended)`, the user typing the answer in its place, and `None after all`, which falls back to the recommended answer of the question it follows; a question asked as plain text ends the reply with nothing to answer.
 After the follow-up, go on to the next step.
 
 **Notes and emoji.** The 💡 notes in this file are shown where they stand, verbatim, one or two sentences each: they are how the user learns what Renovate and MintMaker do while deciding.
@@ -79,7 +79,7 @@ Under the table, not on the stop message, this note:
 
 💡 MintMaker already opens PRs for every ecosystem in this table. The next steps only decide which of those PRs stop waiting for you.
 
-Only when the table lists a file under a `test/`, `tests/`, `examples/`, `vendor/`, `__tests__/` or `__fixtures__/` directory, add one sentence to the note naming that file: MintMaker inherits Renovate's `config:recommended`, which skips dependency files under those directories, so that file never gets a PR.
+Only when the report's `ignored_by_renovate` line names files, add one sentence to the note naming them: MintMaker inherits Renovate's `config:recommended`, which skips dependency files under `test/`, `tests/`, `examples/`, `vendor/` and similar directories, so those files never get a PR.
 
 Ask, header "Ecosystems": Looks right (Recommended) / Needs a correction, the fix typed as the answer, since detection can be wrong, a `pom.xml` kept for a subproject nobody builds.
 When the default branch is `unknown`, add a "Default branch" question to the same call, with the report's `current_branch` as the recommended option.
@@ -575,7 +575,7 @@ Once it is live:
 | When | What you'll see |
 |---|---|
 | Every 4 hours | MintMaker runs. A PR opens on one run and merges on a later one, once CI passed and the branch is up to date. Hours, not minutes. Turning on Settings › General › Allow auto-merge lets GitHub merge as soon as the checks pass instead. |
-| 3+ days after a release | The PR for it appears, `renovate/stability-days` already green. Held updates are invisible: the dependency dashboard is off. |
+| Once the release-age delay has passed | The PR for it appears, `renovate/stability-days` already green. Held updates are invisible: the dependency dashboard is off. |
 | Right away | A vulnerability fix PR, no delay. Worth a look afterwards. |
 | One at a time | Each merge makes the other Renovate branches stale; they rebase and merge on later runs. |
 | In every PR body | `Automerge: Enabled` when the rules matched. Missing means the config didn't match that update: first thing to check. |
