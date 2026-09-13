@@ -60,7 +60,12 @@ the setting and links to the global config instead.
 
 The one limit: with `timestamp-optional`, Renovate's docs say it "will
 treat a release without a releaseTimestamp as stable". A release whose
-registry reports no publish date is not delayed.
+registry reports no publish date is not delayed. Container images are the
+common case: Renovate's docker datasource docs say release timestamps are
+"only supported on Docker Hub", so a base image from
+`registry.access.redhat.com` or `quay.io`, and the Konflux task bundles on
+`quay.io`, get no delay at all. For those, the required checks are the
+only gate.
 
 ## Vulnerability fixes skip the delay
 
