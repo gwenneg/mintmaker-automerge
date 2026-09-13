@@ -117,7 +117,7 @@ Proposed rule for <the library ecosystems found, e.g. Go modules and npm>: patch
 
 Header "Scope": Every patch and minor bump (Recommended) / Development dependencies only, where the manager knows the difference, npm does / Only packages I'll name, the names in a follow-up / Decide per ecosystem, one question per ecosystem with the first three scopes.
 
-Header "Never automerge", question "Any packages that should never be automerged, whatever the scope?", multiSelect: one option per candidate of the report, marked (Recommended), naming why in the description, such as an LTS track, several candidates folded into one option / Other packages, I'll name them, the names in a follow-up / None, marked (Recommended) when the report has no candidate.
+Header "Never automerge", question "Any packages that should never be automerged, whatever the scope?", multiSelect: one option per candidate of the report, marked (Recommended), the report's reason as its description, several candidates folded into one option / Other packages, I'll name them, the names in a follow-up / None, marked (Recommended) when the report has no candidate.
 These packages still get PRs, on manual review whatever the update type.
 
 Header "Majors", question "Any packages whose major bumps may automerge too?": No package, majors stay on manual review (Recommended) / Yes, for packages I'll name.
@@ -269,17 +269,11 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
     "automerge": true
   },
 
-  // --- maven: patch and minor; majors, io.quarkus* and the wrapper stay manual
+  // --- maven: patch and minor; majors, <the manual-review packages> and the wrapper stay manual
   {
     "matchManagers": ["maven"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true
-  },
-  {
-    // Quarkus follows an LTS track: a reviewer picks the target version. https://quarkus.io/releases/
-    "matchManagers": ["maven"],
-    "matchPackageNames": ["io.quarkus*"],
-    "automerge": false
   },
   {
     // The wrapper is every developer's build tool, not just CI's.
@@ -287,7 +281,7 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
     "automerge": false
   },
 
-  // --- gradle: patch and minor; majors and the wrapper stay manual
+  // --- gradle: patch and minor; majors, <the manual-review packages> and the wrapper stay manual
   {
     "matchManagers": ["gradle"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -361,6 +355,14 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
     "automerge": true
   },
 
+  // manual review, any manager
+  {
+    // <the candidate's line from the report, name first: Quarkus follows an LTS track, so a reviewer picks the target version. https://quarkus.io/releases/>
+    "matchManagers": ["<manager>"],
+    "matchPackageNames": ["<pattern>"],
+    "automerge": false
+  },
+
   // majors of named packages, any manager
   {
     // Majors of these packages merge too: <the user's reason>. CI is the only gate.
@@ -384,8 +386,9 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
 How the answers map to the blocks:
 
 - Wrappers, when the user opted in: the wrapper rule becomes `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with the comment `// CI builds with the new wrapper on every PR.`, and the separator line says the wrapper merges.
-- Manual-review packages: one rule per candidate kept or package named, under its own manager and after that manager's rule, with the reason as its comment, as in the Quarkus example: Spring Boot under `gradle` or `maven`, Angular under `npm`, Django under the python managers.
-  Candidates folded into one menu option still get one rule each; none when the user chose none.
+- Manual-review packages: the "manual review" block once per candidate kept or package named, after the rule of its manager, with the pattern and comment the report gives for a candidate, under the manager whose files hold it.
+  A package the user typed gets the managers whose files hold it and the comment `// Named during setup: stays on manual review whatever the update type.`
+  Candidates folded into one menu option still get one rule each; none when the user chose none, and the separator line then names no packages.
 - Base images: drop the `pinDigests` rule when the images are already pinned or the user kept tags only; drop the automerge rule when they kept base images manual, and the separator line then says so.
 - Go: drop the indirect rule when the user automerges indirect dependencies; the separator line says whether they are included.
 - npm: copy exactly one of the two rules; the allow-list width is the "allow-list width" block with `npm` as the manager.

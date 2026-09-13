@@ -91,6 +91,7 @@
     "example/workflows",
     "gradle/actions",
     "konflux-ci/mintmaker//config",
-    "enabledManagers"
+    "enabledManagers",
+    "io.quarkus"
   ]
 }
