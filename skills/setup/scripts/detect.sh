@@ -85,17 +85,19 @@ eco terraform '\.tf$' "Terraform"
 ign=$(printf '%s' "$ALLF" | grep -E '(^|/)(node_modules|bower_components|vendor|examples|__tests__|test|tests|__fixtures__)/' | sort -u | tr '\n' ' ')
 say "ignored_by_renovate: ${ign:-none}"
 
-# Manual-review candidates, frameworks with their own upgrade track: listed in the Screens section.
+# Manual-review candidates, packages with their own upgrade track: listed in the Screens section.
+# To add one, add a cand line. The report line becomes the menu description and the rule comment.
 CANDS=""
-# cand <label> <file regex> <content regex>
+# cand <pattern> <file regex> <content regex> <name> <reason, reading on after the name> <link>
 cand() {
   hit=$(list "$2" | while read -r p; do grep -q -E "$3" "$p" && printf x; done)
-  [ -n "$hit" ] && CANDS="$CANDS$1; "
+  [ -n "$hit" ] && CANDS="$CANDS- $4 (\`$1\`): $4 $5. $6
+"
 }
-cand 'io.quarkus* (Quarkus, LTS track)' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'io\.quarkus'
-cand 'org.springframework.boot* (Spring Boot)' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'org\.springframework\.boot'
-cand 'django (Django, LTS track)' '(^|/)(requirements[^/]*\.txt|pyproject\.toml|Pipfile)$' '^[Dd]jango'
-cand '@angular/* (Angular, LTS track)' '(^|/)package\.json$' '"@angular/core"'
+cand 'io.quarkus*' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'io\.quarkus' 'Quarkus' 'follows an LTS track, so a reviewer picks the target version' https://quarkus.io/releases/
+cand 'org.springframework.boot*' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'org\.springframework\.boot' 'Spring Boot' 'pins every managed Spring dependency, so a reviewer picks the target version' 'https://spring.io/projects/spring-boot#support'
+cand '/^django$/i' '(^|/)(requirements[^/]*\.txt|pyproject\.toml|Pipfile|setup\.py)$' '[Dd]jango' 'Django' 'follows an LTS track, so a reviewer picks the target version' 'https://www.djangoproject.com/download/#supported-versions'
+cand '@angular/*' '(^|/)package\.json$' '"@angular/core"' 'Angular' 'follows an LTS track, so a reviewer picks the target version' https://angular.dev/reference/releases
 
 # Base images, one line per FROM, minus stage names, scratch and variables; the image is the first word after the flags.
 # A function rather than an inline loop: bash 3 cannot parse a case statement inside $( ).
@@ -306,6 +308,6 @@ if [ -n "$found" ]; then
   [ -n "$CFGKEPT" ] && say "$CFGKEPT"
 fi
 say ""
-say "== Manual-review candidates (the first Exceptions option of Step 3)"
-if [ -n "$CANDS" ]; then printf '%s\n' "$CANDS" | tr ';' '\n' | sed -E 's/^ *//; /^$/d; s/^/- /'; else say "(none)"; fi
+say "== Manual-review candidates (the first Never-automerge option of Step 3; one manual-review rule each, under the manager whose files hold the package)"
+if [ -n "$CANDS" ]; then printf '%s' "$CANDS"; else say "(none)"; fi
 exit 0

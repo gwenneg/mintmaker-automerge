@@ -141,7 +141,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
 | Question | Options | Default suggestion |
 |---|---|---|
 | How wide does automerge go for library ecosystems? | Every patch and minor bump. Development dependencies only, where the manager distinguishes them. An allow-list of packages. Or decide per ecosystem. | Every patch and minor bump |
-| Any packages that should never be automerged? | Packages that stay on manual review whatever the scope, such as a framework on an LTS track | Frameworks found in the repo, such as Quarkus, Spring Boot, Django, Angular |
+| Any packages that should never be automerged? | Packages that stay on manual review whatever the scope, such as a framework on an LTS track | The known candidates found in the repo: Quarkus, Spring Boot, Django and Angular today |
 | Any packages whose major bumps may automerge too? | Packages you name, with your reason recorded in the config, such as a test library with good coverage | None; no candidates are proposed |
 | Any actions whose major bumps may automerge too? | Allow-listed actions you name, with your reason recorded in the config | None; a major of an action often changes its inputs or runtime |
 | Pin GitHub Actions to commit SHAs? | Yes: Renovate opens one PR per action to replace the tag with its SHA. No: the allow-list guards version bumps only | Yes when tag-pinned actions are found |
@@ -200,7 +200,7 @@ names in it:
       "automerge": true
     },
     {
-      // Quarkus follows an LTS track, so a reviewer picks the target version.
+      // Quarkus follows an LTS track, so a reviewer picks the target version. https://quarkus.io/releases/
       "matchManagers": ["maven"],
       "matchPackageNames": ["io.quarkus*"],
       "automerge": false
@@ -282,8 +282,9 @@ The plugin is one skill, `skills/setup/`: `SKILL.md` drives the
 conversation, sets its style (one screen per step, every decision a menu,
 a short note per step) and carries the config skeleton,
 the per-ecosystem rule blocks, and the validator workflow inline,
-`scripts/detect.sh` gathers the repository facts, and `references/` holds
-the long-form reasoning and the GitHub steps.
+`scripts/detect.sh` gathers the repository facts, its `cand` lines being
+the packages proposed for manual review, each with its reason and link,
+and `references/` holds the long-form reasoning and the GitHub steps.
 
 ## License
 

@@ -70,7 +70,8 @@
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "baseBranchPatterns",
-    "enabledManagers"
+    "enabledManagers",
+    "springframework"
   ],
   "answers": {
     "Majors": {
