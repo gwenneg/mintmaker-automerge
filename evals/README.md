@@ -60,11 +60,15 @@ step, and the `.jsonl` file has every message.
 
 ## CI
 
-`.github/workflows/evals.yml` runs the fixtures on GitHub Actions, on a
-manual trigger, with an optional list of fixtures, using the
-`CLAUDE_CODE_OAUTH_TOKEN` repository secret minted by `claude setup-token`.
-The job skips itself when the secret is absent. The transcripts are
-uploaded as a workflow artifact. The model is not deterministic, so the
-trigger stays manual until a few runs come out green; then a
-`pull_request` trigger on `skills/**` and `evals/**` makes sense, keeping
-in mind that fork pull requests get no secret and skip the job.
+`.github/workflows/evals.yml` runs the fixtures on GitHub Actions on every
+pull request that touches `skills/**`, `evals/**` or the workflow itself,
+and on a manual trigger with an optional list of fixtures. It uses the
+`CLAUDE_CODE_OAUTH_TOKEN` repository secret minted by `claude setup-token`
+and skips itself when the secret is absent, which is the case on a fork's
+pull request. The transcripts are uploaded as a workflow artifact.
+
+The model is not deterministic and slips about one walkthrough in six, so
+the fixtures that fail get one rerun before the job goes red. A red job
+after the rerun is worth a transcript read. The check stays optional: it
+is path-filtered, and a required check that never runs blocks a PR
+forever, the very thing the skill warns about in Step 8.
