@@ -79,19 +79,39 @@ else
   rsname() { gh api "repos/$slug/rulesets/$1" --jq .name 2>/dev/null; }
   rsbypass() { gh api "repos/$slug/rulesets/$1" --jq "[.bypass_actors[]? | select(.actor_type==\"Integration\" and .actor_id==$KONFLUX_APP_ID) | .bypass_mode] | join(\",\")" 2>/dev/null; }
   [ -z "$pr_rs" ] && say "approval_rule: none (no pull request rule on $db, nothing to bypass)"
-  bypass_rs=""; both=no
+  bypass_rs=""; both=no; need_approval=no; ap_name=""; ap_n=0; ap_bypass=""; ap_holds=no
   for e in $pr_rs; do
     id=${e%%:*}; n=${e#*:}; name=$(rsname "$id"); holds=no
     case " $check_rs " in *" $id "*) holds=yes ;; esac
     say "approval_rule: $n approval(s), ruleset \"$name\", also holds the required checks: $holds"
     b=$(rsbypass "$id")
     if [ -n "$b" ]; then
-      case "$b" in always) b="always, wider than the For pull requests only mode the skill recommends" ;; pull_request) b="For pull requests only" ;; esac
-      bypass_rs="${bypass_rs:+$bypass_rs; }\"$name\", mode: $b"; [ "$holds" = yes ] && both=yes
+      case "$b" in *always*) bl="always, wider than the For pull requests only mode the skill recommends" ;; pull_request) bl="For pull requests only" ;; *) bl=$b ;; esac
+      bypass_rs="${bypass_rs:+$bypass_rs; }\"$name\", mode: $bl"; [ "$holds" = yes ] && both=yes
     fi
+    if [ "$need_approval" = no ] && [ "$n" != 0 ] && [ "$n" != null ]; then need_approval=yes; ap_name=$name; ap_n=$n; ap_bypass=$b; ap_holds=$holds; fi
   done
   say "konflux_bypass: ${bypass_rs:-none} (Red Hat Konflux in the bypass list of a ruleset holding the pull request rule)"
   say "konflux_bypasses_required_checks: $both"
+fi
+
+say "== Step 9 status (one verdict per setting, printed verbatim on the Currently lines)"
+case "$aam" in on) say "status_auto_merge: ✅ on, nothing to do" ;; off) say "status_auto_merge: ⚠️ off, turn it on" ;; *) say "status_auto_merge: $aam" ;; esac
+if [ -z "$br" ]; then
+  say "status_checks: not checked, $why"
+  say "status_bypass: not checked, $why"
+else
+  if [ -z "$checks" ]; then say "status_checks: ⚠️ none, nothing gates the merge yet"; else say "status_checks: ✅ $(printf '%s' "$checks" | awk -F', ' '{print NF}') required, compare them with the guidance below"; fi
+  if [ "$need_approval" = no ]; then say "status_bypass: ✅ no approval rule on $db, nothing to do"
+  elif [ -z "$ap_bypass" ]; then say "status_bypass: ⚠️ $ap_n approval(s) required by \"$ap_name\" and Red Hat Konflux is not on its bypass list: add it, For pull requests only"
+  else
+    case "$ap_holds,$ap_bypass" in
+      yes,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode: move the pull request rule to a ruleset of its own and set the bypass to For pull requests only" ;;
+      yes,*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks: move the pull request rule to a ruleset of its own" ;;
+      no,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode: set it to For pull requests only" ;;
+      *) say "status_bypass: ✅ Red Hat Konflux bypasses \"$ap_name\", For pull requests only, a ruleset without the required checks: in place" ;;
+    esac
+  fi
 fi
 
 say "== Links (Step 9: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
