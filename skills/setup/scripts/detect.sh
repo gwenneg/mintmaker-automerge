@@ -38,7 +38,8 @@ slug=$origin_slug; fork=no; fork_via=""
 if [ -n "$upstream_slug" ] && [ "$upstream_slug" != "$origin_slug" ]; then
   slug=$upstream_slug; fork=yes; fork_via="the upstream remote"
 elif [ -n "$origin_slug" ] && [ "$HAVE_GH" = yes ]; then
-  parent=$(gh api "repos/$origin_slug" --jq 'if .fork then .parent.full_name else empty end' 2>/dev/null)
+  # On an HTTP error gh prints the response body to stdout, so the exit status is the only signal.
+  parent=$(gh api "repos/$origin_slug" --jq 'if .fork then .parent.full_name else empty end' 2>/dev/null) || parent=""
   [ -n "$parent" ] && { slug=$parent; fork=yes; fork_via="gh, origin is a fork"; }
 fi
 say "github_repo: ${slug:-unknown} (the repository the GitHub settings and the PR target)"
@@ -49,7 +50,7 @@ aam="not checked, $why"; role="not checked, $why"; otype=""; api_db=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
   set -- $repo_facts; aam=$1; role=$2; otype=${3:-}; api_db=${4:-}
 fi
-say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 9 prints it)"
+say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 10 prints it)"
 say "github_role: $role (the role of the gh login on this repository; rulesets take admin, Allow auto-merge takes maintain)"
 
 db=""
@@ -63,7 +64,7 @@ fi
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
-say "== Branch rules (Step 9: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+say "== Branch rules (Step 10: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
@@ -95,7 +96,7 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
-say "== Step 9 status (one verdict per setting, printed verbatim on the Currently lines)"
+say "== Step 10 status (one verdict per setting, printed verbatim on the Currently lines)"
 case "$aam" in on) say "status_auto_merge: ✅ on, nothing to do" ;; off) say "status_auto_merge: ⚠️ off, turn it on" ;; *) say "status_auto_merge: $aam" ;; esac
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
@@ -114,7 +115,7 @@ else
   fi
 fi
 
-say "== Links (Step 9: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
+say "== Links (Step 10: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
@@ -125,8 +126,8 @@ else
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
   case "$otype" in
     User) say "settings_org_rulesets: none (the owner is a user account)" ;;
-    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 9)" ;;
-    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 9)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 10)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 10)" ;;
   esac
 fi
 
@@ -146,9 +147,7 @@ eco() {
   row "$3" "$(printf '%s' "$f" | ticks)"
 }
 eco maven '(^|/)pom\.xml$' "Maven"
-eco maven-wrapper '(^|/)(mvnw|\.mvn/wrapper/[^/]+)$' "Maven wrapper"
 eco gradle '(^|/)build\.gradle(\.kts)?$' "Gradle"
-eco gradle-wrapper '(^|/)gradle/wrapper/gradle-wrapper\.properties$' "Gradle wrapper"
 eco gomod '(^|/)go\.mod$' "Go modules"
 eco npm '(^|/)package\.json$' "npm"
 eco pip_requirements '(^|/)requirements[^/]*\.txt$' "Python, requirements"
@@ -203,7 +202,7 @@ bases() {
 }
 BASES=$(bases)
 
-say "== Other updaters (Step 7: Dependabot entries, and workflows that update base images on their own)"
+say "== Other updaters (Step 8: Dependabot entries, and workflows that update base images on their own)"
 # A workflow that mentions base images outside comments and writes changes back (a PR action or a push).
 ou=$(list "$WORKFLOWS" | while read -r wf; do
   grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -288,7 +287,7 @@ else
   say "config_files: none"
 fi
 
-# GitHub Actions in use, shown in the Step 4 table.
+# GitHub Actions in use, shown in the Step 5 table.
 ACTIONS=""; WORKFLOWS_FOUND=no
 if list "$ACTIONFILES" >/dev/null; then
   WORKFLOWS_FOUND=yes
@@ -310,7 +309,7 @@ list '^\.tekton/.*\.ya?ml$' | while read -r f; do
   [ -n "$pr" ] && say "pr_pipeline_check: Red Hat Konflux / $pr$pf"
 done
 
-say "== Workflow jobs (GitHub check names, for Step 9; matrix jobs appear as 'Name (value)')"
+say "== Workflow jobs (GitHub check names, for Step 10; matrix jobs appear as 'Name (value)')"
 [ "$WORKFLOWS_FOUND" = yes ] || say "workflows: none"
 list "$WORKFLOWS" | while read -r wf; do
   awk -v wf="$wf" '
@@ -342,7 +341,7 @@ say "validator_action_main_sha: ${vsha:-unknown (offline? fetch with: git ls-rem
 # table <title> <header row>: a blank line, the section title, the header and its separator.
 table() { say ""; say "== $1"; say "$2"; say "$(printf '%s' "$2" | awk -F'|' '{ s="|"; for (i=2; i<NF; i++) s=s "---|"; print s }')"; }
 say "== Screens (print verbatim in Step 1)"
-say "### ▶️ Step 1/10 Detected ecosystems"
+say "### ▶️ Step 1/11 Detected ecosystems"
 if [ "$konflux" != yes ]; then
   say "🛑 No \`.tekton/\` folder with Konflux markers, so this repo is not onboarded in Konflux and MintMaker does not run on it. This skill stops here: its rules build on MintMaker's global config, which nothing would apply. Onboarding: https://konflux-ci.dev/docs/"
   exit 0
@@ -357,9 +356,9 @@ say "| Ecosystem | Found in |"
 say "|---|---|"
 printf '%s' "$ROWS"
 if [ -z "$ACTIONS" ]; then
-  say ""; say "== Actions table (print verbatim in Step 4)"; say "$([ "$WORKFLOWS_FOUND" = yes ] && echo "workflows: found, no action used" || echo "workflows: none")"
+  say ""; say "== Actions table (print verbatim in Step 5)"; say "$([ "$WORKFLOWS_FOUND" = yes ] && echo "workflows: found, no action used" || echo "workflows: none")"
 else
-  table "Actions table (print verbatim in Step 4)" "| Action | Maintained by | Pinned by |"
+  table "Actions table (print verbatim in Step 5)" "| Action | Maintained by | Pinned by |"
   say "$ACTIONS" | awk '{
     rw = ($2 == "reusable-workflow"); style = rw ? $3 : $2
     if (style ~ /^sha\+version-comment/) s="SHA + version comment"
@@ -372,9 +371,9 @@ else
   }'
 fi
 if [ -z "$BASES" ]; then
-  say ""; say "== Base images table (print verbatim in Step 5)"; say "base_images: none"
+  say ""; say "== Base images table (print verbatim in Step 6)"; say "base_images: none"
 else
-  table "Base images table (print verbatim in Step 5)" "| Base image | Container files | Pinned by |"
+  table "Base images table (print verbatim in Step 6)" "| Base image | Container files | Pinned by |"
   # one row per image, with up to three of the files that use it, in order of first appearance
   say "$BASES" | awk -F': ' '{ img=$2; sub(/ \([^)]*\)$/, "", img); if (!(img in seen)) { seen[img]=1; order[++k]=img }
       if (index(" " files[img] " ", " " $1 " ") == 0) files[img] = files[img] (files[img] == "" ? "" : " ") $1 }
@@ -388,6 +387,30 @@ else
     esac
     say "| \`$shown\` | $files | $pin |"
   done
+fi
+
+# Build toolchains, shown in the Step 4 table: the version pins every developer's tooling reads, not just CI's.
+TC=""
+tcrow() { TC="$TC| $1 | \`$2\` | $3 |
+"; }
+for f in $(list '(^|/)\.mvn/wrapper/maven-wrapper\.properties$'); do
+  v=$(grep -E '^distributionUrl=' "$f" | sed -E 's/.*apache-maven-([0-9][^/-]*).*/\1/'); tcrow "Maven wrapper" "$f" "${v:-unknown}"
+done
+for f in $(list '(^|/)gradle/wrapper/gradle-wrapper\.properties$'); do
+  v=$(grep -E '^distributionUrl=' "$f" | sed -E 's/.*gradle-([0-9][^/-]*)-(bin|all)\.zip.*/\1/'); tcrow "Gradle wrapper" "$f" "${v:-unknown}"
+done
+for f in $(list '(^|/)go\.mod$'); do
+  v=$(awk '$1 == "toolchain" { print $2; exit }' "$f"); [ -n "$v" ] && tcrow "Go toolchain" "$f" "$v"
+done
+for f in $(list '(^|/)package\.json$'); do
+  v=$(sed -n -E 's/^[[:space:]]*"packageManager"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$f" | head -1); [ -n "$v" ] && tcrow "npm packageManager" "$f" "$v"
+  grep -qE '^[[:space:]]*"engines"[[:space:]]*:' "$f" && tcrow "npm engines" "$f" "$(sed -n -E 's/^[[:space:]]*"node"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$f" | head -1)"
+done
+if [ -z "$TC" ]; then
+  say ""; say "== Toolchains table (print verbatim in Step 4)"; say "toolchains: none"
+else
+  table "Toolchains table (print verbatim in Step 4)" "| Toolchain | Pinned in | Version |"
+  printf '%s' "$TC"
 fi
 if [ -n "$found" ]; then
   if [ -n "$(printf '%s' "$CFGTABLE" | tr -d '[:space:]')" ]; then
