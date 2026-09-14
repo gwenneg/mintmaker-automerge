@@ -31,20 +31,35 @@ fi
 say "== Tooling"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then HAVE_GH=yes; else HAVE_GH=no; fi
 say "gh: $HAVE_GH"
-slug=$(git remote get-url origin 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)##; s#\.git$##; s#/$##')
-case "$slug" in */*) ;; *) slug="" ;; esac
-say "github_repo: ${slug:-unknown}"
+# The repository whose settings and PR matter: the upstream when the clone is a fork.
+remote_slug() { git remote get-url "$1" 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)##; s#\.git$##; s#/$##' | grep -E '^[^/]+/[^/]+$'; }
+origin_slug=$(remote_slug origin); upstream_slug=$(remote_slug upstream)
+slug=$origin_slug; fork=no; fork_via=""
+if [ -n "$upstream_slug" ] && [ "$upstream_slug" != "$origin_slug" ]; then
+  slug=$upstream_slug; fork=yes; fork_via="the upstream remote"
+elif [ -n "$origin_slug" ] && [ "$HAVE_GH" = yes ]; then
+  parent=$(gh api "repos/$origin_slug" --jq 'if .fork then .parent.full_name else empty end' 2>/dev/null)
+  [ -n "$parent" ] && { slug=$parent; fork=yes; fork_via="gh, origin is a fork"; }
+fi
+say "github_repo: ${slug:-unknown} (the repository the GitHub settings and the PR target)"
+say "origin_repo: ${origin_slug:-unknown}"
+if [ "$fork" = yes ]; then say "fork: yes (origin is a fork of github_repo, found via $fork_via; the PR branch is pushed to origin, the PR opened on github_repo)"; else say "fork: no"; fi
 if ! command -v gh >/dev/null 2>&1; then why="gh is not installed"; elif [ "$HAVE_GH" != yes ]; then why="gh is not logged in"; elif [ -z "$slug" ]; then why="no GitHub remote"; else why="gh cannot read the repository"; fi
-aam="not checked, $why"; role="not checked, $why"; otype=""
-if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type' 2>/dev/null); then
-  set -- $repo_facts; aam=$1; role=$2; otype=${3:-}
+aam="not checked, $why"; role="not checked, $why"; otype=""; api_db=""
+if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
+  set -- $repo_facts; aam=$1; role=$2; otype=${3:-}; api_db=${4:-}
 fi
 say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 9 prints it)"
 say "github_role: $role (the role of the gh login on this repository; rulesets take admin, Allow auto-merge takes maintain)"
 
-db=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')
+db=""
+if [ "$fork" = yes ]; then
+  [ -n "$upstream_slug" ] && db=$(git symbolic-ref --short refs/remotes/upstream/HEAD 2>/dev/null | sed 's|^upstream/||')
+  [ -z "$db" ] && db=$api_db
+fi
+[ -z "$db" ] && db=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')
 [ -z "$db" ] && db=$(git remote show origin 2>/dev/null | sed -n 's/^ *HEAD branch: //p' | head -1)
-[ -z "$db" ] && [ "$HAVE_GH" = yes ] && db=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null)
+[ -z "$db" ] && db=$api_db
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
@@ -313,6 +328,8 @@ if [ "$konflux" != yes ]; then
   exit 0
 fi
 say "\`.tekton/\` holds $n pipeline file$([ "$n" = 1 ] || printf s) with Konflux markers."
+say ""
+if [ "$fork" = yes ]; then say "Repository: \`$slug\`, the upstream of your fork \`$origin_slug\`: the GitHub settings and the PR target it."; else say "Repository: \`${slug:-unknown}\`"; fi
 say ""
 say "Default branch: \`${db:-unknown}\`"
 say ""

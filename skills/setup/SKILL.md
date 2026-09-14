@@ -82,6 +82,7 @@ Under the table, not on the stop message, this note:
 Only when the report's `ignored_by_renovate` line names files, add one sentence to the note naming them: MintMaker inherits Renovate's `config:recommended`, which skips dependency files under `test/`, `tests/`, `examples/`, `vendor/` and similar directories, so those files never get a PR.
 
 Ask, header "Ecosystems": Looks right (Recommended) / Needs a correction, the fix typed as the answer, since detection can be wrong, a `pom.xml` kept for a subproject nobody builds.
+The screen's Repository line is the report's `github_repo`, the upstream when `fork: yes`; a correction naming another repository replaces it for Steps 9 and 10, and Step 9's current-state lines then read `not checked, repository corrected in Step 1`.
 When the default branch is `unknown`, add a "Default branch" question to the same call, with the report's `current_branch` as the recommended option.
 
 ## Step 2: Renovate config file
@@ -539,6 +540,7 @@ The header `### ▶️ Step 10/10 Pull request`, one line, `Merging this PR is w
 Then the menu, header "Ship it": Branch, commit, push and open the PR (Recommended) / Commit on a branch, I'll push myself / Stop here, keep the changes uncommitted.
 Nothing leaves the machine before that answer.
 Open the PR by the GitHub route available: `gh pr create`, `POST /repos/<github_repo>/pulls` with a token, or push the branch and give the link `https://github.com/<github_repo>/pull/new/<branch>` with the title and body to paste.
+When the report says `fork: yes`, the branch is pushed to `origin`, the fork, and the PR opened on `<github_repo>` with the head `<origin owner>:<branch>`: `gh pr create --repo <github_repo> --head <origin owner>:<branch>`, the same `head` in the `POST` body, or the link `https://github.com/<github_repo>/compare/<default_branch>...<origin owner>:<branch>?expand=1`.
 
 The PR body carries the three Step 9 settings as a checklist.
 A tick records that the user read, understood and took on the setting, nothing more, so a reviewer checks the gate instead of trusting it:

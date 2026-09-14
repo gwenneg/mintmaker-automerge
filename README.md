@@ -53,7 +53,9 @@ you leave out, stays on manual review, exactly as today.
 ## Quick start
 
 You need [Claude Code](https://claude.com/claude-code) and a
-Konflux-onboarded repository, one with a `.tekton/` folder. A `gh` login
+Konflux-onboarded repository, one with a `.tekton/` folder. A fork
+clone works too: the GitHub settings and the PR target the upstream, and
+the branch is pushed to the fork. A `gh` login
 is handy, not required: with it Step 9 shows what the repository has
 today and the skill opens the PR itself, without it Claude reaches GitHub
 another way, the REST API with a token if one is set, or a link you open
