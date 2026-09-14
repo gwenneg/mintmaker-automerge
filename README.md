@@ -128,15 +128,16 @@ yourself with `/plugin marketplace update claude-ichiba` and
    workflow that validates the config on every change, with MintMaker's
    own validator action, unless the repo already has one.
 9. **Walks you through the three GitHub settings**, one screen, each
-   setting with its click path, a direct link to the page, and what the
-   repository has today when `gh` is logged in: "Allow auto-merge", so
+   setting with a direct link to its page, where to look once there, and
+   what the repository has today when `gh` is logged in: "Allow auto-merge", so
    GitHub does the merging and waits for the required checks alone; the
    required status checks, the gate, which you choose yourself after
    the guidance; and, only when the branch requires an approval, the
-   Konflux app bypass of that rule and of nothing else, with a warning
-   when the app already bypasses the ruleset holding the required
-   checks. They take the Admin role on the repository, and the screen
-   says which role you have. You apply them in the GitHub UI and
+   Konflux app bypass of that rule and of nothing else. Each setting
+   opens with a verdict, a green check when it is already in place, in
+   which case its how-to is left out, or a warning naming what to change.
+   They take the Admin role on the repository, and the screen says which
+   role you have. You apply them in the GitHub UI and
    confirm once that you read them.
 10. **Opens the PR**, with your confirmation before anything leaves your
     machine. The PR body records that you read and understood the three

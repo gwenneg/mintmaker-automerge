@@ -65,7 +65,7 @@ This plugin turns on automerge for the dependency updates you decide are low-ris
 How this works:
 - Ten short steps, a few quick decisions along the way, fifteen minutes end to end.
 - The config is written only after you approve the summary, in Step 8.
-- GitHub settings are explained click by click, in Step 9, but never changed by this skill: you apply them yourself, which takes the Admin role on the repository.
+- GitHub settings are checked and explained in Step 9, each with a link to its page, but never changed by this skill: you apply them yourself, which takes the Admin role on the repository.
 - The PR is opened only after you approve it, in Step 10.
 ```
 
@@ -481,23 +481,26 @@ With no question pending there is no answer to wait for, so the same reply goes 
 ## Step 9: GitHub settings
 
 One screen, from this file, no tool call, then one menu.
-The `<...>` placeholders come from the report: `github_role`, `allow_auto_merge` and `default_branch` in the Tooling section, the required checks in the Branch rules section, the URLs in the Links section, and the three verdicts of the Step 9 status section, printed verbatim on the Currently lines, ✅ or ⚠️ included; `not checked` where the report says so.
-Every click path ends with its URL, on the same line, so the terminal makes it clickable; with no GitHub remote the report has none, and the click paths stand alone.
+The `<...>` placeholders come from the report: `github_role` and `default_branch` in the Tooling section, the required checks in the Branch rules section, the URLs in the Links section, and the three verdicts of the Step 9 status section, printed verbatim on the Currently lines, ✅ or ⚠️ included; `not checked` where the report says so.
+Settings 1 and 3 each have two blocks below, a full one and a short one: the short block prints when the setting's verdict opens with ✅, the full block otherwise, `not checked` included.
+Each line that names a place ends with its URL, so the terminal makes it clickable; with no GitHub remote the report has none, and the words stand alone.
 Which checks to require is the user's decision: the skill suggests no list.
 `references/github-branch-protection.md` is the long form for "why?" questions, not to paraphrase into the screen.
+
+The screen, with the full blocks:
 
 ```
 ### ▶️ Step 9/10 GitHub settings
 
 Three settings make automerge work and keep it safe. Changing them takes the Admin role on the repository (yours: <github_role>), and this skill changes none of them: you apply them in GitHub.
 
-1️⃣  **Allow auto-merge**, Settings › General › Pull Requests: <settings_general>
+1️⃣  **Allow auto-merge**, under Pull Requests: <settings_general>
 
 Currently on this repository: <status_auto_merge>.
 
 Renovate marks each PR that matches your rules and asks GitHub to merge it. GitHub does so the moment the required checks pass, whatever the other checks do. With the setting off, Renovate merges the PR itself on a later run, and only once every check on it is green: one failing scan then holds every automerge.
 
-2️⃣  **Required status checks**, Settings › Rules › Rulesets › the ruleset for `<default_branch>` › Require status checks to pass: <settings_ruleset_checks, or settings_rulesets when the report has none>
+2️⃣  **Required status checks**, the rule "Require status checks to pass" in the ruleset for `<default_branch>`: <settings_ruleset_checks, or settings_rulesets when the report has none>
 
 Currently required: <status_checks>
 - <one bullet per check in the report's required_checks, in backticks; no bullet when there is none>
@@ -516,16 +519,35 @@ Currently on this repository: <status_bypass>.
 
 That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else. Organization first: if an organization ruleset already lets `Red Hat Konflux` bypass the pull request rule, nothing to do here either; with many Konflux repositories in the organization, one such ruleset from an organization owner beats repeating this in each of them.
 
-Per repository, on rulesets (recommended): Settings › Rules › Rulesets › the ruleset holding "Require a pull request before merging" › Bypass list › Add bypass › `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio` › "For pull requests only", so the app can never push straight to the branch: <settings_ruleset_approval, or settings_rulesets when the report has none>
+Per repository, on rulesets (recommended): the ruleset holding "Require a pull request before merging" › Bypass list › Add bypass › `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio` › "For pull requests only", so the app can never push straight to the branch: <settings_ruleset_approval, or settings_rulesets when the report has none>
 
-On branch protection rules, only if the repository still uses them: Settings › Branches › the rule for the branch › "Require a pull request before merging" › "Allow specified actors to bypass required pull requests" › add the app: <settings_branches>
+On branch protection rules, only if the repository still uses them: the rule for the branch › "Require a pull request before merging" › "Allow specified actors to bypass required pull requests" › add the app: <settings_branches>
 
 ⚠️ Never let the app bypass the required checks. A bypass covers the whole ruleset, so if the ruleset holding the pull request rule also holds the required checks, move the pull request rule to a ruleset of its own before adding the bypass. On branch protection rules the bypass option is part of the pull request rule itself, so there is nothing to split.
 ```
 
-On a repository still on branch protection rules, setting 2 lives in Settings › Branches › the rule for the branch › Require status checks to pass; say so in place of the ruleset path only when the user says the repository has no ruleset.
+The short block of setting 1, in place of its full block when `status_auto_merge` opens with ✅:
+
+```
+1️⃣  **Allow auto-merge**, under Pull Requests: <settings_general>
+
+Currently on this repository: <status_auto_merge>.
+
+Renovate marks each PR that matches your rules and asks GitHub to merge it. GitHub does so the moment the required checks pass, whatever the other checks do.
+```
+
+The short block of setting 3, in place of its full block, the ⚠️ line included, when `status_bypass` opens with ✅:
+
+```
+3️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals: <settings_ruleset_approval, or settings_rulesets when the report has none>
+
+Currently on this repository: <status_bypass>.
+
+That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else.
+```
 
 Menu, header "Settings": `I read it, understood it, and will apply the three settings before automerge goes live (Recommended)` / `I'm not sure, help me understand`.
+When all three verdicts open with ✅, the first label is `I read it, understood it, and the three settings are in place (Recommended)` instead.
 On the second, explain from the reference in a few lines, the ruleset splitting and the organization ruleset in particular, and answer what the user asks, with the report's "Konflux names" and "Workflow jobs" sections as illustration of this repository's check names, never as a list to set; then ask again.
 
 The answer is an acknowledgement, recorded as such in the PR body: the skill verifies nothing.
@@ -560,6 +582,7 @@ A tick records that the user read, understood and took on the setting, nothing m
     The ticks record that acknowledgement, not a verified state.
     Reviewer: check the three settings before merging.
 
+A setting whose Step 9 verdict opened with ✅ ends its item with `read, understood, already in place` instead of the `to be ...` clause.
 A box stays unticked when Step 9 ended without the "I read it" answer, and the body names what is still open.
 The body ends with the attribution line, verbatim:
 
