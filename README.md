@@ -41,9 +41,11 @@ you leave out, stays on manual review, exactly as today.
   in CI, so each one is vetted individually, and only version bumps of
   SHA-pinned actions qualify. A moved tag never merges on its own.
 - **Branch protection is treated as the gate, not as paperwork.** The
-  plugin explains which status checks to require, how to let the Konflux
-  app skip an approval rule and nothing else when the branch has one, and
-  asks you to confirm the settings are in place before it opens the PR.
+  plugin explains the repository setting that lets GitHub do the merging
+  on the required checks alone, which status checks to require, how to
+  let the Konflux app skip an approval rule and nothing else when the
+  branch has one, and asks you to confirm the settings are in place
+  before it opens the PR.
 - **One readable file, no shared preset.** The generated config is small,
   commented where a decision was made, and complete on its own. What merges unattended
   in a repository stays that repository's decision.
@@ -52,9 +54,10 @@ you leave out, stays on manual review, exactly as today.
 
 You need [Claude Code](https://claude.com/claude-code) and a
 Konflux-onboarded repository, one with a `.tekton/` folder. A `gh` login
-is handy, not required: with it the skill opens the PR itself, without it
-Claude reaches GitHub another way, the REST API with a token if one is set,
-or a link you open to create the PR yourself. Install from
+is handy, not required: with it Step 9 shows what the repository has
+today and the skill opens the PR itself, without it Claude reaches GitHub
+another way, the REST API with a token if one is set, or a link you open
+to create the PR yourself. Install from
 the [claude-ichiba](https://github.com/gwenneg/claude-ichiba) marketplace:
 
 ```
@@ -122,16 +125,19 @@ yourself with `/plugin marketplace update claude-ichiba` and
    actually uses, because the validator cannot do that. Then it adds a CI
    workflow that validates the config on every change, with MintMaker's
    own validator action, unless the repo already has one.
-9. **Walks you through the branch protection**, with a short primer on
-   rulesets, then one section per setting with the exact clicks: the
-   required status checks, the gate that makes automerge safe, which you
-   choose yourself after the guidance and confirm you will set; and, only
-   when the branch requires an
-   approval, the Konflux app bypass of that rule, per repository or once
-   for the organization through an organization ruleset. You apply them
-   in the GitHub UI and confirm each one.
+9. **Walks you through the three GitHub settings**, one screen, each
+   setting with its click path, a direct link to the page, and what the
+   repository has today when `gh` is logged in: "Allow auto-merge", so
+   GitHub does the merging and waits for the required checks alone; the
+   required status checks, the gate, which you choose yourself after
+   the guidance; and, only when the branch requires an approval, the
+   Konflux app bypass of that rule and of nothing else, with a warning
+   when the app already bypasses the ruleset holding the required
+   checks. They take the Admin role on the repository, and the screen
+   says which role you have. You apply them in the GitHub UI and
+   confirm once that you read them.
 10. **Opens the PR**, with your confirmation before anything leaves your
-    machine. The PR body records that you read and understood the two
+    machine. The PR body records that you read and understood the three
     settings above and took on applying them, so a reviewer checks them
     before merging rather than trusting the plugin. Merging it turns
     automerge on. It closes with what to expect once it is live.
@@ -153,7 +159,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
 | Pin base images to digests? | Yes: one pin PR, then rebuilds of a tag arrive as digest PRs. No: tags only | Yes when an unpinned `FROM` line is found |
 | Automerge build-tool wrapper bumps? | Patch and minor bumps of the Maven or Gradle wrapper, or keep them manual | Keep manual: rare updates, and a bad one breaks every local build |
 | What happens to `dependabot.yml`? | Remove, narrow to what Renovate does not cover, or keep | Depends on the overlap found |
-| Which status checks are required? | Your call, after the guidance: typically the build, the tests, the Konflux PR pipeline check, never a scanner or a check that skips some PRs | None proposed; you confirm you understood and will set them |
+| The three GitHub settings | "Allow auto-merge", the required status checks, typically the build, the tests and the Konflux PR pipeline check, never a scanner or a check that skips some PRs, and the Konflux app bypass of the approval rule only | Your call, after the guidance; one acknowledgement that you read them and will apply them |
 
 What never automerges, whatever you answer: digest-only updates of
 GitHub Actions, Helm charts, Terraform, and any ecosystem without a rule.
@@ -228,6 +234,7 @@ explains every one of them.
 | Update-type filter | `patch` and `minor` qualify by default, plus `digest` for base images. Majors stay manual unless you name the package; action digests, pins and lock-file maintenance always do. | The generated rules |
 | Allow-list for GitHub Actions | Each action is vetted by name, and only SHA-pinned actions can automerge safely. | The generated rules, plus SHA pinning |
 | Manual-review list | Packages you name stay manual whatever the update type. | Your answers |
+| Allow auto-merge | Lets Renovate hand the merge to GitHub, which waits for the required checks alone. Off, Renovate merges the PR itself on a later run and waits for every check on it, required or not, so one failing scan holds every automerge. | You, in the repository settings |
 | Required status checks | GitHub's auto-merge waits for required checks only: a check that is not required can still be running, or failing, when the PR merges. | You, in the branch ruleset |
 | Scoped bypass | The Konflux app skips the approval rule only, in "For pull requests only" mode. It still has to pass required checks. | You, in the branch ruleset |
 
@@ -245,9 +252,10 @@ repositories, or set `minimumReleaseAge` in your file.
 
 ## Once it is live
 
-- MintMaker runs every 4 hours. A PR opens on one run and merges on a
-  later one, once CI passed and the branch is up to date. Hours, not
-  minutes.
+- MintMaker runs every 4 hours. A PR opens on one run with GitHub's
+  auto-merge armed, and GitHub merges it the moment the required checks
+  pass. Without "Allow auto-merge", Renovate merges it itself on a later
+  run, and only once every check on the PR is green.
 - A fresh release shows up once the release-age delay has passed, with a
   passing `renovate/stability-days` check. Nothing lists the updates being
   held, since MintMaker disables Renovate's dependency dashboard.
@@ -264,7 +272,8 @@ repositories, or set `minimumReleaseAge` in your file.
 | Symptom | Cause | What to do |
 |---|---|---|
 | `Automerge: Enabled` is missing from a PR that should qualify | The rules did not match the update: wrong package or action name, or an update type outside `patch` and `minor` | Compare the name in the rule with the one in the PR title. The validator does not catch a name that matches nothing. |
-| A qualifying PR sits open with green checks | The merge happens on a later MintMaker run, or "Allow auto-merge" is off and Renovate merges it itself | Wait for the next 4-hour run. Turn on "Allow auto-merge" for faster merges. |
+| A qualifying PR sits open with green required checks | "Allow auto-merge" is off, so Renovate merges the PR itself and waits for every check on it: a failing check that is not required, a vulnerability scan for instance, holds it | Turn on Settings › General › Allow auto-merge. The PR is armed on its next rebase and merges once the required checks pass. |
+| A qualifying PR sits open with all checks green | The merge happens on a later MintMaker run, up to 4 hours after the checks passed, when "Allow auto-merge" is off | Wait for the next run, or turn on "Allow auto-merge" so GitHub merges as soon as the checks pass. |
 | A PR merged with no approval | That is the bypass working as designed | Check that the bypass is scoped to the approval rule and set to "For pull requests only" |
 | Human PRs are stuck on a pending required check | A required check that does not run on every PR, such as the config validator workflow or `renovate/stability-days` | Remove it from the required checks. Only require checks that run on every PR. |
 | The validator workflow fails on the PR | A syntax or schema error in the config | Fix the file and push again. The workflow log names the line. |

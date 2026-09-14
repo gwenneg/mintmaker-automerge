@@ -35,13 +35,10 @@
       "Write it"
     ],
     [
-      "Checks"
+      "Settings"
     ],
     [
-      "Checks"
-    ],
-    [
-      "Bypass"
+      "Settings"
     ],
     [
       "Ship it"
@@ -56,13 +53,13 @@
         "Third-party"
       ]
     },
-    "Checks": {
+    "Pin base images": "Keep tags only",
+    "Settings": {
       "sequence": [
         "help me understand",
         "I read it"
       ]
-    },
-    "Pin base images": "Keep tags only"
+    }
   },
   "files": {
     "renovate.json": {

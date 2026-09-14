@@ -75,7 +75,7 @@ const STEP_OF = {
   Pipeline: 6, "Go indirect": 6, "npm PRs": 6,
   "Base image workflow": 7, Dependabot: 7,
   "Write it": 8,
-  Checks: 9, Bypass: 9,
+  Settings: 9,
   "Ship it": 10,
 };
 // A prescribed menu opens with one of these headers, after its step header has been printed. A follow-up
@@ -88,9 +88,9 @@ const stepOf = (headers, stepsSeen) => {
 // Headers the model shortens to fit the tool's 12-character limit.
 const HEADER_ALIAS = { Workflow: "Base image workflow", "Never merge": "Never automerge", "Pin images": "Pin base images", Branch: "Default branch" };
 // After these answers the reply may legitimately open with something other
-// than the next step header: Step 6 ends with its two notes and a closing
-// line, Step 8 goes on with the write phase, the Checks answer brings the
-// bypass screen or an explanation, and Step 10 is the end.
+// than the next step header: Step 6 ends with its note and a closing
+// line, Step 8 goes on with the write phase, a Settings answer may bring
+// an explanation, and Step 10 is the end.
 const NO_HEADER_AFTER_STEP = new Set([6, 8, 10]);
 const STOP_MESSAGE = "🛑 No `.tekton/` folder with Konflux markers";
 
@@ -270,16 +270,14 @@ async function runFixture(name) {
       if (!t.followUp) {
         // a follow-up may come right after its step's menu, with no screen of its own
         check(before.length > 0, `menu ${lbl} came with no text since the previous menu`);
-        if (t.headers[0] === "Bypass") {
-          check(before.join("\n").includes("**The Konflux app bypass**"), "the Bypass menu came without the bypass screen");
-        } else if (t.step && !(t.headers[0] === "Checks" && menus.filter((m) => m.headers[0] === "Checks").indexOf(t) > 0)) {
+        if (t.step && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) {
           check(before.some((x) => x.includes(`### ▶️ Step ${t.step}/10`)), `menu ${lbl} came without the Step ${t.step}/10 screen before it`);
         }
       }
       const next = trace.slice(i + 1).find((x) => x.kind !== "tool");
       const nextMenu = trace.slice(i + 1).find((x) => x.kind === "menu");
       const followUpNext = nextMenu?.followUp; // a line introducing a follow-up is not a transition
-      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step) && t.headers[0] !== "Checks") {
+      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step) && t.headers[0] !== "Settings") {
         check(/^### ▶️ Step \d+\/10/.test(next.text.trimStart()), `after the ${lbl} answer the reply does not open with the next step header`);
       }
     }

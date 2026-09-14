@@ -34,12 +34,66 @@ say "gh: $HAVE_GH"
 slug=$(git remote get-url origin 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)##; s#\.git$##; s#/$##')
 case "$slug" in */*) ;; *) slug="" ;; esac
 say "github_repo: ${slug:-unknown}"
+if ! command -v gh >/dev/null 2>&1; then why="gh is not installed"; elif [ "$HAVE_GH" != yes ]; then why="gh is not logged in"; elif [ -z "$slug" ]; then why="no GitHub remote"; else why="gh cannot read the repository"; fi
+aam="not checked, $why"; role="not checked, $why"; otype=""
+if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type' 2>/dev/null); then
+  set -- $repo_facts; aam=$1; role=$2; otype=${3:-}
+fi
+say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 9 prints it)"
+say "github_role: $role (the role of the gh login on this repository; rulesets take admin, Allow auto-merge takes maintain)"
 
 db=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')
 [ -z "$db" ] && db=$(git remote show origin 2>/dev/null | sed -n 's/^ *HEAD branch: //p' | head -1)
 [ -z "$db" ] && [ "$HAVE_GH" = yes ] && db=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name 2>/dev/null)
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
+
+say "== Branch rules (Step 9: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+KONFLUX_APP_ID=296509
+br=""; checks_id=""; pr_id=""
+if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
+  br=$(gh api "repos/$slug/rules/branches/$db" --jq '([.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(", ")), ([.[] | select(.type=="required_status_checks") | .ruleset_id] | unique | map(tostring) | join(" ")), ([.[] | select(.type=="pull_request") | "\(.ruleset_id):\(.parameters.required_approving_review_count)"] | join(" "))' 2>/dev/null) && br="ok
+$br"
+fi
+if [ -z "$br" ]; then
+  say "branch_rules: not checked (takes gh logged in, a GitHub remote and a known default branch)"
+else
+  checks=$(printf '%s\n' "$br" | sed -n 2p); check_rs=$(printf '%s\n' "$br" | sed -n 3p); pr_rs=$(printf '%s\n' "$br" | sed -n 4p)
+  checks_id=${check_rs%% *}; pr_id=${pr_rs%% *}; pr_id=${pr_id%%:*}
+  say "required_checks: ${checks:-none}"
+  rsname() { gh api "repos/$slug/rulesets/$1" --jq .name 2>/dev/null; }
+  rsbypass() { gh api "repos/$slug/rulesets/$1" --jq "[.bypass_actors[]? | select(.actor_type==\"Integration\" and .actor_id==$KONFLUX_APP_ID) | .bypass_mode] | join(\",\")" 2>/dev/null; }
+  [ -z "$pr_rs" ] && say "approval_rule: none (no pull request rule on $db, nothing to bypass)"
+  bypass_rs=""; both=no
+  for e in $pr_rs; do
+    id=${e%%:*}; n=${e#*:}; name=$(rsname "$id"); holds=no
+    case " $check_rs " in *" $id "*) holds=yes ;; esac
+    say "approval_rule: $n approval(s), ruleset \"$name\", also holds the required checks: $holds"
+    b=$(rsbypass "$id")
+    if [ -n "$b" ]; then
+      case "$b" in always) b="always, wider than the For pull requests only mode the skill recommends" ;; pull_request) b="For pull requests only" ;; esac
+      bypass_rs="${bypass_rs:+$bypass_rs; }\"$name\", mode: $b"; [ "$holds" = yes ] && both=yes
+    fi
+  done
+  say "konflux_bypass: ${bypass_rs:-none} (Red Hat Konflux in the bypass list of a ruleset holding the pull request rule)"
+  say "konflux_bypasses_required_checks: $both"
+fi
+
+say "== Links (Step 9: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
+if [ -z "$slug" ]; then
+  say "links: none (no GitHub remote)"
+else
+  say "settings_general: https://github.com/$slug/settings (Allow auto-merge is under Pull Requests)"
+  say "settings_rulesets: https://github.com/$slug/settings/rules"
+  [ -n "$checks_id" ] && say "settings_ruleset_checks: https://github.com/$slug/settings/rules/$checks_id (the ruleset holding the required checks)"
+  [ -n "$pr_id" ] && say "settings_ruleset_approval: https://github.com/$slug/settings/rules/$pr_id (the ruleset holding the pull request rule)"
+  say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
+  case "$otype" in
+    User) say "settings_org_rulesets: none (the owner is a user account)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 9)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 9)" ;;
+  esac
+fi
 
 say "== Ecosystems (manager: first matching files)"
 ROWS=""; ALLF=""
