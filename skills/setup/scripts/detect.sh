@@ -38,7 +38,8 @@ slug=$origin_slug; fork=no; fork_via=""
 if [ -n "$upstream_slug" ] && [ "$upstream_slug" != "$origin_slug" ]; then
   slug=$upstream_slug; fork=yes; fork_via="the upstream remote"
 elif [ -n "$origin_slug" ] && [ "$HAVE_GH" = yes ]; then
-  parent=$(gh api "repos/$origin_slug" --jq 'if .fork then .parent.full_name else empty end' 2>/dev/null)
+  # On an HTTP error gh prints the response body to stdout, so the exit status is the only signal.
+  parent=$(gh api "repos/$origin_slug" --jq 'if .fork then .parent.full_name else empty end' 2>/dev/null) || parent=""
   [ -n "$parent" ] && { slug=$parent; fork=yes; fork_via="gh, origin is a fork"; }
 fi
 say "github_repo: ${slug:-unknown} (the repository the GitHub settings and the PR target)"
