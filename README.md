@@ -113,9 +113,11 @@ yourself with `/plugin marketplace update claude-ichiba` and
 5. **Decides on base images and build-tool wrappers.** Base image bumps
    tested by the Konflux build, digest pinning, and whether wrapper bumps
    merge on their own.
-6. **Covers the Konflux pipeline and the extras.** Pipeline updates any
-   day or on MintMaker's Saturday batch, indirect Go dependencies,
-   grouped npm PRs.
+6. **Covers the Konflux pipeline and the extras.** The days on which
+   updates may open and merge, any day or Monday to Thursday for a team
+   that keeps Fridays and weekends quiet, pipeline updates on those days
+   or on MintMaker's Saturday batch, indirect Go dependencies, grouped
+   npm PRs.
 7. **Checks for overlap with other updaters.** Two bots on one ecosystem
    means two PRs for one bump. You choose whether a home-grown base-image
    workflow retires once Renovate covers base images, and whether to
@@ -157,7 +159,8 @@ yourself with `/plugin marketplace update claude-ichiba` and
 | Which actions are allowed to automerge? | The actions maintained by GitHub, the third-party ones, both, or a list you type | The GitHub-maintained ones |
 | Automerge indirect Go dependencies? | Yes or keep them manual | Asked when `go.mod` is found |
 | One PR per npm bump, or one grouped PR? | Independent PRs, or a group that only merges when every bump in it passes | Asked when `package.json` is found |
-| Pipeline updates any day, or on MintMaker's Saturday batch? | `at any time`, or inherit the schedule | Asked |
+| On which days may updates open and merge? | Any day, Monday to Thursday, or days you type; vulnerability fixes arrive any day either way | Any day |
+| Pipeline updates on the same days, or on MintMaker's Saturday batch? | The merge days, or inherit the schedule | Asked |
 | Automerge base image bumps? | Digest, patch and minor bumps of the `FROM` images, tested by the Konflux PR build. Majors stay manual | Yes, asked when a container file is found |
 | Pin base images to digests? | Yes: one pin PR, then rebuilds of a tag arrive as digest PRs. No: tags only | Yes when an unpinned `FROM` line is found |
 | Automerge build-tool wrapper bumps? | Patch and minor bumps of the Maven or Gradle wrapper, or keep them manual | Keep manual: rare updates, and a bad one breaks every local build |

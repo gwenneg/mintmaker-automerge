@@ -134,7 +134,36 @@ covered, the task replacements MintMaker configures included.
 `"schedule": ["at any time"]` is a separate decision. MintMaker's global
 config schedules the tekton manager on Saturdays; the override makes
 pipeline updates arrive within hours instead. Dropping the line keeps the
-weekly batch.
+weekly batch. When the repo has merge days, the line carries their cron
+instead, so the pipeline follows the same days.
+
+## Why the merge days are a `schedule`, not an `automergeSchedule`
+
+Renovate has an option named for the job, `automergeSchedule`, and the
+skill does not use it. Its docs warn that with `platformAutomerge` on,
+Renovate asks GitHub to merge the PR when it creates it, so the window
+cannot be honoured, and that honouring it takes `platformAutomerge:
+false`. That would give up GitHub's auto-merge, which Step 9 shows is not
+a speed tip: Renovate's own merge waits for every check on the PR, the
+non-required scanner included, so one red scan holds every automerge.
+
+`schedule` limits when Renovate opens and rebases branches instead. With
+GitHub's auto-merge, a PR merges as soon as the checks of its last push
+pass, minutes to an hour after Renovate touched it, so bounding the
+pushes bounds the merges. MintMaker runs every four hours from 00:00 UTC,
+and its global config sets `updateNotScheduled` to false, so an existing
+branch is not rebased outside the schedule either. `* * * * 1-4` is
+Monday to Thursday in UTC, in the cron form MintMaker uses for its own
+schedules; Renovate's cron takes `*` for the minutes and reads it in
+UTC unless the `timezone` option names another. The last run inside the
+window is Thursday 20:00 UTC, so a PR from that run merges on Thursday
+afternoon in the Americas, Thursday evening in Europe and Friday morning
+further east; a `timezone` line moves the window to the team's clock.
+
+Two things stay outside the days. Vulnerability fix PRs ignore the
+schedule by design, so a fix opens and merges on a Friday like any other
+day. And a PR whose checks a person re-runs on a Friday merges on that
+Friday: the schedule holds Renovate, not GitHub.
 
 ## Why everything stays in one file, not a shared preset
 

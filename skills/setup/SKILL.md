@@ -170,8 +170,10 @@ Konflux pipelines found: <one line per PR pipeline, from the report, with "path-
 💡 A pipeline PR does more than bump task versions: when a new task version needs a change in your pipeline, such as a new parameter, MintMaker edits the pipeline for you in the same PR. The PR is built with the updated pipeline, so the Konflux PR check is the only test it gets: remember that in Step 9.
 ```
 
-Up to three questions in one call, the first always, the others only when relevant.
-Header "Pipeline": Konflux pipeline updates any day (Recommended), within hours of a catalog bump / Keep MintMaker's Saturday batch.
+Up to four questions in one call, the first two always, the others only when relevant.
+Header "Merge days", question "On which days may updates open and merge?": Any day (Recommended), MintMaker runs every four hours and a bump merges within hours of clearing the release-age delay / Monday to Thursday, no PR opens, rebases or merges from Friday to Sunday, UTC, so a bump due on a Friday waits for Monday / Other days, I'll type them, the days in a follow-up.
+Whatever the answer, vulnerability fix PRs ignore the schedule and arrive any day: say so in the description of the second and third options.
+Header "Pipeline": Konflux pipeline updates on the same days as the rest (Recommended), within hours of a catalog bump / Keep MintMaker's Saturday batch, pipeline PRs then open and merge on Saturdays whatever the merge days say.
 When the report flags path-filtered PR pipelines, add a third option, Keep pipeline updates manual, and say in the question why: a path-filtered pipeline cannot be a required check, so a `tekton` PR for it would merge before its build reports.
 Header "Go indirect", when `go.mod` was found: Automerge indirect dependencies too (Recommended) / Keep them manual.
 Header "npm PRs", when `package.json` was found: One PR per bump (Recommended), a broken bump blocks only itself / One grouped PR, which merges only when every bump in it passes.
@@ -213,7 +215,10 @@ Never fetch an example config from another repository: these blocks are the refe
 ### The skeleton
 
 Header comment, the optional `extends` block for action pinning, the `tekton` block, and a `{{PACKAGE_RULES}}` placeholder.
-Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; drop the `schedule` line and its comment when they kept the Saturday batch.
+Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
+Merge days other than any day add the two lines of the merge-days block below, right after the header comment, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
+Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
+The days are a `schedule`, not an `automergeSchedule`: Renovate ignores the latter once GitHub's auto-merge is on, and the schedule bounds the merge because a PR merges as soon as the checks of its last rebase pass.
 The comments are part of the file the user keeps: copy them as they are, never add instructions meant for you, and never restate what the header already says.
 
 ```jsonc
@@ -243,6 +248,14 @@ The comments are part of the file the user keeps: copy them as they are, never a
     {{PACKAGE_RULES}}
   ]
 }
+```
+
+The merge-days block, here for Monday to Thursday:
+
+```jsonc
+  // PRs open and rebase Monday to Thursday, UTC, and merge once their checks pass.
+  // Vulnerability fix PRs ignore the schedule.
+  "schedule": ["* * * * 1-4"],
 ```
 
 ### The rule blocks
@@ -404,7 +417,8 @@ The menu labels below are fixed: a menu that says the files are already written 
 
 Show the whole trust decision in one table: one row per detected ecosystem, one for the Konflux pipeline, one for vulnerability fixes, and one row per ecosystem found that gets no rule.
 This screen is never skipped and never shortened, whatever came before it, and the "Write it" menu is not asked until it has been printed: the user approves what they see in that table, nothing else.
-Below it, one line with the Step 7 decision, when there was one, then one line saying what the answer does: it writes files in the working tree, nothing more.
+Below it, one line with the merge days when they are not any day, the cron said in words, then one line with the Step 7 decision, when there was one, then one line saying what the answer does: it writes files in the working tree, nothing more.
+The pipeline row says "any day" when the merge days are any day, "Saturdays" when the batch was kept.
 Nothing is committed or pushed before Step 10.
 
 ```
@@ -414,10 +428,12 @@ Nothing is committed or pushed before Step 10.
 |---|---|---|---|
 | Maven | patch, minor; majors of `org.assertj:*` | other majors, `io.quarkus*`, wrapper | Quarkus follows an LTS track; AssertJ is test-only |
 | GitHub Actions | patch, minor of `actions/checkout`, `actions/setup-java` | majors, digest-only, every other action | allow-list, SHA-pinned |
-| Konflux pipeline | task bumps, migrations, any day | – | the Konflux PR build tests them |
+| Konflux pipeline | task bumps, migrations, Monday to Thursday | – | the Konflux PR build tests them |
 | Vulnerability fixes | patch, minor, without the release-age delay | fixes needing a major | inherited from MintMaker |
 | Base images | digest, patch, minor of `ubi9/openjdk-21` | majors, a new RHEL or JDK line | the Konflux PR build tests the image |
 | Maven wrapper | – | everything | kept manual, every developer builds with it |
+
+Merge days: Monday to Thursday, UTC. Vulnerability fixes still arrive and merge any day.
 
 Dependabot: `dependabot.yml` removed, alerts stay on.
 

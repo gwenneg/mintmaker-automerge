@@ -72,7 +72,7 @@ const STEP_OF = {
   Scope: 3,
   "Pin actions": 4, "Allow-list": 4,
   "Base images": 5, "Pin base images": 5, Wrappers: 5,
-  Pipeline: 6, "Go indirect": 6, "npm PRs": 6,
+  "Merge days": 6, Pipeline: 6, "Go indirect": 6, "npm PRs": 6,
   "Base image workflow": 7, Dependabot: 7,
   "Write it": 8,
   Settings: 9,

@@ -25,6 +25,7 @@
       "Wrappers"
     ],
     [
+      "Merge days",
       "Pipeline",
       "npm PRs"
     ],
