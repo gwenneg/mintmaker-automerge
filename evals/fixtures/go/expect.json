@@ -12,9 +12,13 @@
     [
       "Scope",
       "Never automerge",
-      "Majors"
+      "Majors",
+      "Go indirect"
     ],
     "*",
+    [
+      "Toolchains"
+    ],
     [
       "Allow-list",
       "Majors"
@@ -23,8 +27,8 @@
       "Base images"
     ],
     [
-      "Pipeline",
-      "Go indirect"
+      "Merge days",
+      "Pipeline"
     ],
     [
       "Write it"
@@ -55,7 +59,8 @@
     "actions/setup-go",
     "\"tekton\"",
     "github.com/spf13/cobra",
-    "golang.org/x/sync"
+    "golang.org/x/sync",
+    "\"matchDepTypes\": [\"toolchain\"]"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -75,5 +80,8 @@
         "text": "github.com/spf13/cobra and golang.org/x/sync"
       }
     }
+  ],
+  "textContains": [
+    "go1.22.5"
   ]
 }

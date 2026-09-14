@@ -15,6 +15,9 @@
       "Majors"
     ],
     [
+      "Toolchains"
+    ],
+    [
       "Pin actions",
       "Allow-list",
       "Majors"
@@ -22,10 +25,10 @@
     "*",
     [
       "Base images",
-      "Pin base images",
-      "Wrappers"
+      "Pin base images"
     ],
     [
+      "Merge days",
       "Pipeline"
     ],
     [
@@ -62,13 +65,17 @@
     "actions/checkout",
     "actions/setup-java",
     "\"tekton\"",
-    "\"matchUpdateTypes\": [\"major\"]"
+    "\"matchUpdateTypes\": [\"major\"]",
+    "\"schedule\": [\"* * * * 1-4\"]",
+    "\"matchManagers\": [\"maven-wrapper\"]"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "baseBranchPatterns",
     "enabledManagers",
-    "springframework"
+    "springframework",
+    "\"at any time\"",
+    "automergeSchedule"
   ],
   "answers": {
     "Majors": {
@@ -79,7 +86,8 @@
           "text": "actions/checkout: a major only changes the Node runtime it needs, and CI runs it on every PR"
         }
       ]
-    }
+    },
+    "Merge days": "Monday to Thursday"
   },
   "followups": [
     {
@@ -88,5 +96,8 @@
         "text": "actions/checkout: a major only changes the Node runtime it needs, and CI runs it on every PR"
       }
     }
+  ],
+  "textContains": [
+    "Monday to Thursday"
   ]
 }
