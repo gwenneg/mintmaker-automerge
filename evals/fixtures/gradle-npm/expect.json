@@ -21,13 +21,14 @@
     ],
     [
       "Base images",
-      "Pin base images",
-      "Wrappers"
+      "Pin base images"
+    ],
+    [
+      "Toolchains"
     ],
     [
       "Merge days",
-      "Pipeline",
-      "npm PRs"
+      "Pipeline"
     ],
     [
       "Write it"
@@ -42,10 +43,9 @@
   "answers": {
     "Location": ".github/renovate.jsonc",
     "Scope": "Decide per ecosystem",
-    "Wrappers": "Automerge patch and minor",
-    "npm PRs": "One grouped PR",
     "Ship it": "Commit on a branch",
-    "Allow-list": "Actions maintained by GitHub"
+    "Allow-list": "Actions maintained by GitHub",
+    "Toolchains": "Automerge patch and minor"
   },
   "followups": [
     {
@@ -67,14 +67,14 @@
   },
   "validatorFiles": 1,
   "textContains": [
-    "nothing to bump"
+    "nothing to bump",
+    "pnpm@9.1.0"
   ],
   "configContains": [
     "\"matchManagers\": [\"gradle\"]",
     "\"matchManagers\": [\"gradle-wrapper\"]",
     "\"matchManagers\": [\"npm\"]",
     "devDependencies",
-    "groupName",
     "org.springframework.boot",
     "@angular",
     "\"matchManagers\": [\"dockerfile\"]",
@@ -82,7 +82,8 @@
     "actions/checkout",
     "actions/setup-java",
     "actions/setup-node",
-    "\"tekton\""
+    "\"tekton\"",
+    "\"matchDepTypes\": [\"packageManager\", \"engines\"]"
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
@@ -90,6 +91,7 @@
     "gradle/actions",
     "konflux-ci/mintmaker//config",
     "enabledManagers",
-    "io.quarkus"
+    "io.quarkus",
+    "groupName"
   ]
 }

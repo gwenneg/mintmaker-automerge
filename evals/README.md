@@ -11,7 +11,7 @@ same detect script; only the person is replaced.
 Each directory under `fixtures/` is a small Konflux-onboarded repository
 with an `expect.json` next to it. The driver copies the fixture to a temp
 directory, commits it, runs `/mintmaker-automerge:setup` there, picks the
-`(Recommended)` option of every menu, answers `Stop here` at Step 10 so
+`(Recommended)` option of every menu, answers `Stop here` at Step 11 so
 nothing is committed or pushed, then checks:
 
 - the welcome screen comes first, the ten step headers come in order, and
@@ -27,11 +27,11 @@ nothing is committed or pushed, then checks:
 
 | Fixture | Exercises |
 |---|---|
-| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, Dependabot overlap removed in Step 7 |
-| `go` | Go modules with indirect deps, digest-pinned base images, SHA-pinned actions, strict `renovate.json` migrated and renamed, MintMaker `extends` and `baseBranchPatterns` dropped, custom rule preserved |
-| `python` | pyproject and requirements with Django, no container file or wrapper (Step 5 skipped), path-filtered PR pipeline, existing `renovate.jsonc` kept in place, unknown default branch |
+| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, Dependabot overlap removed in Step 8 |
+| `go` | Go modules with indirect deps and a `toolchain` line, digest-pinned base images, SHA-pinned actions, strict `renovate.json` migrated and renamed, MintMaker `extends` and `baseBranchPatterns` dropped, custom rule preserved |
+| `python` | pyproject and requirements with Django, no container file or toolchain (Steps 5 and 6 skipped), path-filtered PR pipeline, existing `renovate.jsonc` kept in place, unknown default branch |
 | `not-konflux` | No `.tekton/`: the skill prints the stop message and asks nothing |
-| `gradle-npm` | Gradle with Spring Boot and a wrapper, npm with Angular, a `latest` base image, a reusable workflow and a bare-SHA action, a validator workflow already present, config placed under `.github/`, scope decided per ecosystem through follow-up menus, wrapper automerge opted in, grouped npm PRs, "Commit on a branch" at Step 10 |
+| `gradle-npm` | Gradle with Spring Boot and a wrapper, npm with Angular, a `latest` base image, a reusable workflow and a bare-SHA action, a validator workflow already present, config placed under `.github/`, scope decided per ecosystem through follow-up menus, a `packageManager` pin, toolchain automerge opted in, "Commit on a branch" at Step 11 |
 | `rust-preset` | Cargo, no GitHub workflows (Step 4 skipped), `.github/renovate.json5` with a shared preset fetched from GitHub, `minimumReleaseAge` and `enabledManagers` removed, typed answers naming a never-automerge package and packages whose majors may merge with their reason, base images kept manual, Saturday batch kept |
 | `ruby-updaters` | Bundler and Terraform, `renovate.json` kept strict on request, actions left unpinned with the full allow-list, a base-image bump workflow removed, Dependabot narrowed with a stale entry flagged, "help me understand" on the GitHub settings question answered once |
 
@@ -71,4 +71,4 @@ The model is not deterministic and slips about one walkthrough in six, so
 the fixtures that fail get one rerun before the job goes red. A red job
 after the rerun is worth a transcript read. The check stays optional: it
 is path-filtered, and a required check that never runs blocks a PR
-forever, the very thing the skill warns about in Step 8.
+forever, the very thing the skill warns about in Step 9.

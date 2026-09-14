@@ -117,7 +117,27 @@ is the strongest and the most maintenance.
 
 For Go, MintMaker's global config enables updates of indirect dependencies
 (`matchDepTypes: ["indirect"]` in its `gomod` block), so option 1
-automerges them too.
+automerges them too. The same block sets `postUpdateOptions` to
+`gomodTidy` and `gomodUpdateImportPaths`, so every Go PR arrives tidied;
+the repo file restates neither.
+
+## Why build toolchains get a step of their own
+
+A wrapper is the JVM shape of a wider thing: a pinned tool version that
+every developer's tooling reads, not just CI's. `mvnw` and `gradlew`
+download the version their properties file pins. The `toolchain` line of
+`go.mod` makes the `go` command fetch that exact compiler, and Renovate's
+gomod docs say updates to it "should" be "proposed by default", under the
+`toolchain` depType, while the `go` directive is not bumped by default.
+In `package.json`, `packageManager` is what corepack installs and
+`engines` constrains Node; Renovate's npm manager handles both under
+depTypes of the same names. Renovate treats each as a dependency, so the
+plain patch-and-minor rule of the manager would merge a new Go release or
+a new pnpm line on its own. The toolchain rules keep them manual by
+default; opting in flips them to patch and minor, with CI as the gate.
+Version files such as `.nvmrc`, `.python-version` or `.tool-versions`
+have managers of their own that MintMaker enables, and no rule from the
+skill, so they stay manual like any ecosystem without a rule.
 
 ## Why the Tekton block can automerge
 
@@ -143,7 +163,7 @@ Renovate has an option named for the job, `automergeSchedule`, and the
 skill does not use it. Its docs warn that with `platformAutomerge` on,
 Renovate asks GitHub to merge the PR when it creates it, so the window
 cannot be honoured, and that honouring it takes `platformAutomerge:
-false`. That would give up GitHub's auto-merge, which Step 9 shows is not
+false`. That would give up GitHub's auto-merge, which Step 10 shows is not
 a speed tip: Renovate's own merge waits for every check on the PR, the
 non-required scanner included, so one red scan holds every automerge.
 

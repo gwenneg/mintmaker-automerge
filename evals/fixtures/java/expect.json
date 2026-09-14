@@ -22,8 +22,10 @@
     "*",
     [
       "Base images",
-      "Pin base images",
-      "Wrappers"
+      "Pin base images"
+    ],
+    [
+      "Toolchains"
     ],
     [
       "Merge days",
@@ -64,7 +66,8 @@
     "actions/setup-java",
     "\"tekton\"",
     "\"matchUpdateTypes\": [\"major\"]",
-    "\"schedule\": [\"* * * * 1-4\"]"
+    "\"schedule\": [\"* * * * 1-4\"]",
+    "\"matchManagers\": [\"maven-wrapper\"]"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
