@@ -33,7 +33,7 @@ nothing is committed or pushed, then checks:
 | `not-konflux` | No `.tekton/`: the skill prints the stop message and asks nothing |
 | `gradle-npm` | Gradle with Spring Boot and a wrapper, npm with Angular, a `latest` base image, a reusable workflow and a bare-SHA action, a validator workflow already present, config placed under `.github/`, scope decided per ecosystem through follow-up menus, wrapper automerge opted in, grouped npm PRs, "Commit on a branch" at Step 10 |
 | `rust-preset` | Cargo, no GitHub workflows (Step 4 skipped), `.github/renovate.json5` with a shared preset fetched from GitHub, `minimumReleaseAge` and `enabledManagers` removed, typed answers naming a never-automerge package and packages whose majors may merge with their reason, base images kept manual, Saturday batch kept |
-| `ruby-updaters` | Bundler and Terraform, `renovate.json` kept strict on request, actions left unpinned with the full allow-list, a base-image bump workflow removed, Dependabot narrowed with a stale entry flagged, "help me understand" on the checks question answered once |
+| `ruby-updaters` | Bundler and Terraform, `renovate.json` kept strict on request, actions left unpinned with the full allow-list, a base-image bump workflow removed, Dependabot narrowed with a stale entry flagged, "help me understand" on the GitHub settings question answered once |
 
 The answers each fixture gives, and the checks on the result, are in its
 `expect.json`; the format is documented at the top of `run.mjs`.
