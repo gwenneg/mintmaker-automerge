@@ -35,7 +35,7 @@ After the follow-up, go on to the next step.
 
 **Notes and emoji.** The 💡 notes in this file are shown where they stand, verbatim, one or two sentences each: they are how the user learns what Renovate and MintMaker do while deciding.
 When the user asks why, answer from `references/why.md` in a few lines.
-Emoji, each with one meaning: ⚠️ needs attention, as a table status or a one-line warning where this file places one, ✅ its opposite as a table status only, 🟢 automerges, 🛑 stays manual, 💡 a note, ▶️ before every step header, 🤖 once in the welcome title, 1️⃣ 2️⃣ 3️⃣ the three settings of Step 9, each followed by two spaces, since terminals draw a keycap wider than they count it.
+Emoji, each with one meaning: ⚠️ needs attention, as a table status or a one-line warning where this file places one, ✅ its opposite, as a table status or opening a Currently line of Step 9, 🟢 automerges, 🛑 stays manual, 💡 a note, ▶️ before every step header, 🤖 once in the welcome title, 1️⃣ 2️⃣ 3️⃣ the three settings of Step 9, each followed by two spaces, since terminals draw a keycap wider than they count it.
 None in prose.
 
 **The report.** The bundled `scripts/detect.sh` scanned the repository when this skill loaded; its output is under "Repo facts" below.
@@ -481,7 +481,7 @@ With no question pending there is no answer to wait for, so the same reply goes 
 ## Step 9: GitHub settings
 
 One screen, from this file, no tool call, then one menu.
-The `<...>` placeholders come from the report: `github_role`, `allow_auto_merge` and `default_branch` in the Tooling section, the required checks, the approval rule and the bypass in the Branch rules section, the URLs in the Links section; `not checked` where the report says so.
+The `<...>` placeholders come from the report: `github_role`, `allow_auto_merge` and `default_branch` in the Tooling section, the required checks in the Branch rules section, the URLs in the Links section, and the three verdicts of the Step 9 status section, printed verbatim on the Currently lines, ✅ or ⚠️ included; `not checked` where the report says so.
 Every click path ends with its URL, on the same line, so the terminal makes it clickable; with no GitHub remote the report has none, and the click paths stand alone.
 Which checks to require is the user's decision: the skill suggests no list.
 `references/github-branch-protection.md` is the long form for "why?" questions, not to paraphrase into the screen.
@@ -493,14 +493,14 @@ Three settings make automerge work and keep it safe. Changing them takes the Adm
 
 1️⃣  **Allow auto-merge**, Settings › General › Pull Requests: <settings_general>
 
-Currently on this repository: <on / off / not checked>.
+Currently on this repository: <status_auto_merge>.
 
 Renovate marks each PR that matches your rules and asks GitHub to merge it. GitHub does so the moment the required checks pass, whatever the other checks do. With the setting off, Renovate merges the PR itself on a later run, and only once every check on it is green: one failing scan then holds every automerge.
 
 2️⃣  **Required status checks**, Settings › Rules › Rulesets › the ruleset for `<default_branch>` › Require status checks to pass: <settings_ruleset_checks, or settings_rulesets when the report has none>
 
-Currently required:
-- <one bullet per check in the report's required_checks, in backticks; with no check to list, the two lines become one: `Currently required: none.` or `Currently required: not checked.`>
+Currently required: <status_checks>
+- <one bullet per check in the report's required_checks, in backticks; no bullet when there is none>
 
 This is the gate: GitHub's auto-merge waits for these checks and for nothing else. Require what proves the PR's own change is good:
 - the build, and the tests when they are a separate job
@@ -512,7 +512,7 @@ Never require:
 
 3️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals.
 
-Currently on this repository: <approval_rule and konflux_bypass from the report / "no approval rule: nothing to do" / not checked>.
+Currently on this repository: <status_bypass>.
 
 That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else. Organization first: if an organization ruleset already lets `Red Hat Konflux` bypass the pull request rule, nothing to do here either; with many Konflux repositories in the organization, one such ruleset from an organization owner beats repeating this in each of them.
 
@@ -524,7 +524,6 @@ On branch protection rules, only if the repository still uses them: Settings ›
 ```
 
 On a repository still on branch protection rules, setting 2 lives in Settings › Branches › the rule for the branch › Require status checks to pass; say so in place of the ruleset path only when the user says the repository has no ruleset.
-When the report says `konflux_bypasses_required_checks: yes`, the ⚠️ line opens with `On this repository the app already bypasses "<ruleset>", which also holds the required checks.` and goes on with the split.
 
 Menu, header "Settings": `I read it, understood it, and will apply the three settings before automerge goes live (Recommended)` / `I'm not sure, help me understand`.
 On the second, explain from the reference in a few lines, the ruleset splitting and the organization ruleset in particular, and answer what the user asks, with the report's "Konflux names" and "Workflow jobs" sections as illustration of this repository's check names, never as a list to set; then ask again.
