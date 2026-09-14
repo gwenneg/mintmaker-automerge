@@ -114,7 +114,7 @@ The report's manual-review candidates are not listed on the screen; they are the
 Proposed rule for <the library ecosystems found, e.g. Go modules and npm>: patch and minor bumps merge on their own once CI passes, majors stay on manual review. Narrow or widen it below.
 ```
 
-💡 Whichever option you pick below, the same two protections apply: MintMaker's release-age delay and your required checks. "Development dependencies only" is not the safe choice it sounds like: a compromised dev dependency still runs in CI, where it can read secrets and alter the build.
+💡 Whichever option you pick below, the same two protections apply: MintMaker's release-age delay and your required GitHub checks. "Development dependencies only" is not the safe choice it sounds like: a compromised dev dependency still runs in CI, where it can read secrets and alter the build.
 
 Header "Scope": Every patch and minor bump (Recommended) / Development dependencies only, where the manager knows the difference, npm does / Only packages I'll name, the names in a follow-up / Decide per ecosystem, one question per ecosystem with the first three scopes.
 
