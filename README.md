@@ -56,7 +56,7 @@ You need [Claude Code](https://claude.com/claude-code) and a
 Konflux-onboarded repository, one with a `.tekton/` folder. A fork
 clone works too: the GitHub settings and the PR target the upstream, and
 the branch is pushed to the fork. A `gh` login
-is handy, not required: with it Step 10 shows what the repository has
+is handy, not required: with it Step 11 shows what the repository has
 today and the skill opens the PR itself, without it Claude reaches GitHub
 another way, the REST API with a token if one is set, or a link you open
 to create the PR yourself. Install from
@@ -77,7 +77,7 @@ Then, from the repository you want to set up:
 The skill opens with a scan of the repository. Every decision is a menu
 with a recommended option, each step fits on one screen with a one-line note on
 what Renovate and MintMaker do there, and a summary table shows the whole
-trust decision before a byte is written. Expect a few quick decisions along the way and about fifteen minutes end to end. At the
+trust decision before a byte is written. Expect a few quick decisions along the way and about twenty minutes end to end. At the
 end you have a reviewed config file on a branch, an open PR, and the
 GitHub settings in place.
 
@@ -100,37 +100,46 @@ yourself with `/plugin marketplace update claude-ichiba` and
    base images and how they are pinned, how workflows pin their actions,
    and frameworks worth keeping on manual review. You confirm or correct
    the list.
-2. **Finds the Renovate config**, or asks where to create it. Existing
+2. **Lists the branches MintMaker runs on**, read from the pull-request
+   pipelines: one row per branch with its namespace and pipelines.
+   Renovate reads the config from the default branch, so the rules apply
+   to every one of them, and the config cannot switch a branch off. The
+   step asks whether MintMaker should stop opening PRs on one of them,
+   with no recommended answer, and only on request prints the how-to:
+   install `oc` from the OpenShift docs when it is missing, log in with
+   the command the Konflux UI copies, then annotate and verify each
+   component that builds the branch. It applies none of it.
+3. **Finds the Renovate config**, or asks where to create it. Existing
    custom rules are preserved. Two things an existing file may carry are
    removed with the reason: an `extends` of MintMaker's global config, and
    `baseBranchPatterns`, both applied by MintMaker itself.
-3. **Sets the library rule.** How wide automerge goes for library
+4. **Sets the library rule.** How wide automerge goes for library
    ecosystems, which packages must never be automerged whatever the
    scope, which packages may have their majors automerged too, and
    whether indirect Go dependencies are included.
-4. **Decides on build toolchains.** The Maven and Gradle wrappers, the
+5. **Decides on build toolchains.** The Maven and Gradle wrappers, the
    Go `toolchain` line and npm's `packageManager` are every developer's
    tools, not just CI's: kept manual unless you opt in.
-5. **Vets GitHub Actions.** Whether to pin actions to commit SHAs,
+6. **Vets GitHub Actions.** Whether to pin actions to commit SHAs,
    which actions may automerge, and whether any of them may have its
    majors automerged too.
-6. **Decides on base images.** Base image bumps tested by the Konflux
+7. **Decides on base images.** Base image bumps tested by the Konflux
    build, and digest pinning.
-7. **Sets the merge days.** Any day, or Monday to Thursday for a team
+8. **Sets the merge days.** Any day, or Monday to Thursday for a team
    that keeps Fridays and weekends quiet, or days you type; and whether
    pipeline updates follow those days or MintMaker's Saturday batch.
-8. **Checks for overlap with other updaters.** Two bots on one ecosystem
+9. **Checks for overlap with other updaters.** Two bots on one ecosystem
    means two PRs for one bump. You choose whether a home-grown base-image
    workflow retires once Renovate covers base images, and whether to
    remove, narrow, or keep `dependabot.yml`. Stale Dependabot entries
    pointing at deleted directories are flagged on the way.
-9. **Shows the summary table**, waits for your go, writes the config to
+10. **Shows the summary table**, waits for your go, writes the config to
    your working tree, nothing committed or pushed yet, and shows the
    diff. Every name in the rules is compared with what the repo
    actually uses, because the validator cannot do that. Then it adds a CI
    workflow that validates the config on every change, with MintMaker's
    own validator action, unless the repo already has one.
-10. **Walks you through the three GitHub settings**, one screen, each
+11. **Walks you through the three GitHub settings**, one screen, each
    setting with a direct link to its page, where to look once there, and
    what the repository has today when `gh` is logged in: "Allow auto-merge", so
    GitHub does the merging and waits for the required checks alone; the
@@ -142,7 +151,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
    They take the Admin role on the repository, and the screen says which
    role you have. You apply them in the GitHub UI and
    confirm once that you read them.
-11. **Opens the PR**, with your confirmation before anything leaves your
+12. **Opens the PR**, with your confirmation before anything leaves your
     machine. The PR body records that you read and understood the three
     settings above and took on applying them, so a reviewer checks them
     before merging rather than trusting the plugin. Merging it turns
@@ -153,6 +162,7 @@ yourself with `/plugin marketplace update claude-ichiba` and
 | Question | Options | Default suggestion |
 |---|---|---|
 | How wide does automerge go for library ecosystems? | Every patch and minor bump. Development dependencies only, where the manager distinguishes them. An allow-list of packages. Or decide per ecosystem. | Every patch and minor bump |
+| Should MintMaker stop opening PRs on one of the branches it runs on? | No, or the how-to for one branch: an annotation on every component that builds it, applied with `oc`, never by the skill | None: your call; asked only when more than one branch has a Konflux component |
 | Any packages that should never be automerged? | Packages that stay on manual review whatever the scope, such as a framework on an LTS track | The known candidates found in the repo: Quarkus, Spring Boot, Django and Angular today |
 | Any packages whose major bumps may automerge too? | Packages you name, with your reason recorded in the config, such as a test library with good coverage | None; no candidates are proposed |
 | Any actions whose major bumps may automerge too? | Allow-listed actions you name, with your reason recorded in the config | None; a major of an action often changes its inputs or runtime |
@@ -283,7 +293,8 @@ repositories, or set `minimumReleaseAge` in your file.
 | A PR merged with no approval | That is the bypass working as designed | Check that the bypass is scoped to the approval rule and set to "For pull requests only" |
 | Human PRs are stuck on a pending required check | A required check that does not run on every PR, such as the config validator workflow or `renovate/stability-days` | Remove it from the required checks. Only require checks that run on every PR. |
 | The validator workflow fails on the PR | A syntax or schema error in the config | Fix the file and push again. The workflow log names the line. |
-| The check names in Step 10 don't match the PR | MintMaker has not opened a PR on this repository yet, so the names are derived from `.tekton/` | Verify the check names on the first MintMaker PR. The app to add to the bypass is always `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`. |
+| MintMaker opens PRs against a branch that should get none | Konflux components build that branch, and the config on the default branch applies to it; a package rule cannot stop vulnerability fixes there, and `baseBranchPatterns` would make two jobs run on the default branch at once | Annotate every component that builds the branch with `mintmaker.appstudio.redhat.com/disabled=true`, as Step 2 shows on request, then close its open MintMaker PRs by hand. |
+| The check names in Step 11 don't match the PR | MintMaker has not opened a PR on this repository yet, so the names are derived from `.tekton/` | Verify the check names on the first MintMaker PR. The app to add to the bypass is always `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`. |
 
 ## Development
 

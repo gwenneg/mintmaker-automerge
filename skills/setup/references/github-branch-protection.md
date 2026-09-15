@@ -1,6 +1,6 @@
 # GitHub settings for automerge
 
-The GitHub side of automerge, in the order Step 10 of the skill walks
+The GitHub side of automerge, in the order Step 11 of the skill walks
 through it: the repository setting that lets GitHub do the merging, the
 required checks that gate that merge, and the bypass that lets the Konflux
 app merge without a human approval when the branch requires one.
@@ -13,7 +13,7 @@ and branch protection rules take the Admin role ("People with admin
 access to a repository, or a custom role with the 'edit repository rules'
 permission, can create, edit, and delete rulesets"); an organization
 ruleset takes an organization owner. The detect script reports the role of
-the `gh` login on the repository as `github_role`, so Step 10 can say from
+the `gh` login on the repository as `github_role`, so Step 11 can say from
 the start whether the user can do this alone.
 
 ## Part 1: "Allow auto-merge", so GitHub does the merging
@@ -176,7 +176,7 @@ target branch's rules are currently organized:
    the branch directly, which nothing here needs.
 6. Save the ruleset.
 7. The first Konflux-app PR that merges with passing checks and no human
-   approval confirms it; Step 11 of the skill tells the user to watch for
+   approval confirms it; Step 12 of the skill tells the user to watch for
    that. Required status checks still apply to the app.
 
 ### Repos on classic branch protection rules

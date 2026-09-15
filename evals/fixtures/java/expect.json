@@ -7,6 +7,12 @@
       "Ecosystems"
     ],
     [
+      "Branches"
+    ],
+    [
+      "Next"
+    ],
+    [
       "Location"
     ],
     [
@@ -87,7 +93,8 @@
         }
       ]
     },
-    "Merge days": "Monday to Thursday"
+    "Merge days": "Monday to Thursday",
+    "Branches": "security-compliance"
   },
   "followups": [
     {
@@ -98,6 +105,8 @@
     }
   ],
   "textContains": [
-    "Monday to Thursday"
+    "Monday to Thursday",
+    "Copy login command",
+    "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true"
   ]
 }
