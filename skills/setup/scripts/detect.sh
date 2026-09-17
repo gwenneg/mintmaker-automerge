@@ -6,7 +6,7 @@
 set -u
 say() { printf '%s\n' "$*"; }
 
-git rev-parse --show-toplevel >/dev/null 2>&1 || { say "STATUS: not inside a git repository. Do the checks of Steps 1 to 3 by hand."; exit 0; }
+git rev-parse --show-toplevel >/dev/null 2>&1 || { say "STATUS: not inside a git repository. Do the checks of Steps 1 to 4 by hand."; exit 0; }
 cd "$(git rev-parse --show-toplevel)" || exit 0
 FILES=$(git ls-files)
 list() { printf '%s\n' "$FILES" | grep -E "$1"; }
@@ -31,6 +31,8 @@ fi
 say "== Tooling"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then HAVE_GH=yes; else HAVE_GH=no; fi
 say "gh: $HAVE_GH"
+# The oc client, for the Step 2 how-to: installed or not, with its version when it is.
+if command -v oc >/dev/null 2>&1; then say "oc: yes ($(oc version --client 2>/dev/null | head -1 | sed 's/^Client Version: *//'))"; else say "oc: no (not on the PATH)"; fi
 # The repository whose settings and PR matter: the upstream when the clone is a fork.
 remote_slug() { git remote get-url "$1" 2>/dev/null | sed -E 's#^(https://github\.com/|git@github\.com:|ssh://git@github\.com/)##; s#\.git$##; s#/$##' | grep -E '^[^/]+/[^/]+$'; }
 origin_slug=$(remote_slug origin); upstream_slug=$(remote_slug upstream)
@@ -50,7 +52,7 @@ aam="not checked, $why"; role="not checked, $why"; otype=""; api_db=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
   set -- $repo_facts; aam=$1; role=$2; otype=${3:-}; api_db=${4:-}
 fi
-say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 10 prints it)"
+say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 11 prints it)"
 say "github_role: $role (the role of the gh login on this repository; rulesets take admin, Allow auto-merge takes maintain)"
 
 db=""
@@ -64,7 +66,7 @@ fi
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
-say "== Branch rules (Step 10: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+say "== Branch rules (Step 11: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
@@ -96,7 +98,7 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
-say "== Step 10 status (one verdict per setting, printed verbatim on the Currently lines)"
+say "== Step 11 status (one verdict per setting, printed verbatim on the Currently lines)"
 case "$aam" in on) say "status_auto_merge: ✅ on, nothing to do" ;; off) say "status_auto_merge: ⚠️ off, turn it on" ;; *) say "status_auto_merge: $aam" ;; esac
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
@@ -115,7 +117,7 @@ else
   fi
 fi
 
-say "== Links (Step 10: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
+say "== Links (Step 11: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
@@ -126,8 +128,8 @@ else
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
   case "$otype" in
     User) say "settings_org_rulesets: none (the owner is a user account)" ;;
-    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 10)" ;;
-    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 10)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 11)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 11)" ;;
   esac
 fi
 
@@ -202,7 +204,7 @@ bases() {
 }
 BASES=$(bases)
 
-say "== Other updaters (Step 8: Dependabot entries, and workflows that update base images on their own)"
+say "== Other updaters (Step 9: Dependabot entries, and workflows that update base images on their own)"
 # A workflow that mentions base images outside comments and writes changes back (a PR action or a push).
 ou=$(list "$WORKFLOWS" | while read -r wf; do
   grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -249,7 +251,7 @@ if [ -n "$found" ]; then
     cat -n "$c"
     named=$(list . | grep -v "^$c$" | while read -r f; do grep -q -F "${c##*/}" "$f" && printf '%s ' "$f"; done)
     say "-- $c is named in: ${named:-no other file}"
-    # Shared presets from other GitHub repos, fetched so Step 2 needs no command.
+    # Shared presets from other GitHub repos, fetched so Step 3 needs no command.
     grep -o -E "${Q}github>[^\"']+$Q" "$c" | tr -d "\"'" | grep -v 'konflux-ci/mintmaker//' | sort -u | while read -r preset; do
       spec="${preset#github>}"; ref="${spec##*#}"; [ "$ref" = "$spec" ] && ref=""; spec="${spec%%#*}"
       case "$spec" in
@@ -264,9 +266,9 @@ if [ -n "$found" ]; then
         body=$(curl -fsSL --max-time 10 "https://raw.githubusercontent.com/$repo/${ref:-HEAD}/$cand" 2>/dev/null)
         [ -z "$body" ] && [ "$HAVE_GH" = yes ] && body=$(gh api "repos/$repo/contents/$cand${ref:+?ref=$ref}" --jq .content 2>/dev/null | base64 -d 2>/dev/null)
       done
-      if [ -n "$body" ]; then printf '%s\n' "$body" | sed 's/^/   /'; else say "   (not fetched: the repo may be private; read it by hand in Step 2, with gh api if available)"; fi
+      if [ -n "$body" ]; then printf '%s\n' "$body" | sed 's/^/   /'; else say "   (not fetched: the repo may be private; read it by hand in Step 3, with gh api if available)"; fi
     done
-    # Rows for the Step 2 table: the two known removals, the presets to read, the rest kept.
+    # Rows for the Step 3 table: the two known removals, the presets to read, the rest kept.
     CFGTABLE="$CFGTABLE$(awk -v f="$c" -v q="$Q" -v nq="[^\"']+" '
       function r(what, happens) { printf "| %s:%d | %s | %s |\n", f, NR, what, happens }
       function key(n) { return "(^|[^A-Za-z0-9_])" q "?(" n ")" q "?[[:space:]]*:" }
@@ -287,7 +289,7 @@ else
   say "config_files: none"
 fi
 
-# GitHub Actions in use, shown in the Step 5 table.
+# GitHub Actions in use, shown in the Step 6 table.
 ACTIONS=""; WORKFLOWS_FOUND=no
 if list "$ACTIONFILES" >/dev/null; then
   WORKFLOWS_FOUND=yes
@@ -301,15 +303,57 @@ if list "$ACTIONFILES" >/dev/null; then
     END { for (k in c) print k, c[k] }' | sort)
 fi
 
+# Facts of one pull-request pipeline, "name|component|application|namespace|branches": the branches from the
+# on-target-branch annotation or from every target_branch == "..." of the CEL expression, which PaC may wrap
+# over several lines; a matches()/startsWith() test is reported as such; unknown when nothing names a branch.
+pr_facts() {
+  awk '
+    /^metadata:/ { m=1 }
+    m && /^  name:/ && name == "" { name=$2 }
+    m && /^  namespace:/ { ns=$2 }
+    /appstudio\.openshift\.io\/component:/ { comp=$2 }
+    /appstudio\.openshift\.io\/application:/ { app=$2 }
+    /pipelinesascode\.tekton\.dev\/on-cel-expression:/ { cel=1; s=$0; sub(/.*on-cel-expression:[[:space:]]*/, "", s); expr=s; next }
+    cel && (/^[[:space:]]*[A-Za-z0-9._\/-]+:([[:space:]]|$)/ || /^[^[:space:]]/) { cel=0 }
+    cel { s=$0; sub(/^[[:space:]]+/, "", s); expr=expr " " s }
+    /pipelinesascode\.tekton\.dev\/on-target-branch:/ { s=$0; sub(/.*on-target-branch:[[:space:]]*/, "", s); gsub(/[][" ]/, "", s); tb=s }
+    /^spec:/ { m=0; cel=0 }
+    END {
+      gsub(/"/, "", name); gsub(/"/, "", ns); gsub(/"/, "", comp); gsub(/"/, "", app)
+      br=tb
+      if (br == "") { s=expr; while (match(s, /target_branch[[:space:]]*==[[:space:]]*"[^"]+"/)) { t=substr(s, RSTART, RLENGTH); sub(/^[^"]*"/, "", t); sub(/"$/, "", t); br=(br == "" ? t : br "," t); s=substr(s, RSTART+RLENGTH) } }
+      if (br == "") { s=expr; while (match(s, /target_branch\.(matches|startsWith|endsWith)\("[^"]+"\)/)) { t=substr(s, RSTART, RLENGTH); sub(/^target_branch\./, "", t); br=(br == "" ? t : br "," t); s=substr(s, RSTART+RLENGTH) } }
+      if (br == "") br="unknown"
+      printf "%s|%s|%s|%s|%s\n", name, comp, app, ns, br
+    }' "$1"
+}
+PRFACTS=$(list '^\.tekton/.*\.ya?ml$' | while read -r f; do
+  grep -q -E 'pipelinesascode\.tekton\.dev/on-(event|cel-expression).*pull_request' "$f" || continue
+  printf '%s|%s\n' "$f" "$(pr_facts "$f")"
+done)
+
+say "== Branches (Step 2: the branches MintMaker runs on, every Konflux component of each, from the pull-request pipelines in .tekton/)"
+# One line per branch with all its components and pipelines; the Step 2 how-to fills its placeholders from these.
+BRLINES=$(printf '%s\n' "$PRFACTS" | awk -F'|' 'NF >= 6 { n=split($6, b, ",");
+    for (i=1; i<=n; i++) { br=b[i]; if (!(br in order)) { order[br]=++k; names[k]=br }
+      c=($3 == "" ? "unknown" : $3); if (!seen[br SUBSEP c]++) comps[br]=(comps[br] == "" ? c : comps[br] "," c)
+      if (ns[br] == "" && $5 != "") ns[br]=$5
+      pipes[br]=(pipes[br] == "" ? $1 : pipes[br] "," $1) } }
+  END { for (j=1; j<=k; j++) { br=names[j]; printf "branch: %s namespace=%s components=%s pipelines=%s\n", br, (ns[br] == "" ? "unknown" : ns[br]), comps[br], pipes[br] } }')
+if [ -z "$BRLINES" ]; then say "branches: none (no pull-request pipeline in .tekton/)"; nbr=0; else printf '%s\n' "$BRLINES"; nbr=$(printf '%s\n' "$BRLINES" | wc -l | tr -d ' '); fi
+say "branches: $nbr"
+
 say "== Konflux names (derived from .tekton/, verify on the first MintMaker PR)"
 list '^\.tekton/.*\.ya?ml$' | while read -r f; do
   grep -q -E 'pipelinesascode\.tekton\.dev/on-(event|cel-expression).*pull_request' "$f" || continue
   pr=$(awk '/^metadata:/{m=1} m && /^  name:/{print $2; exit}' "$f")
   pf=""; grep -q -E 'on-cel-expression.*files\.' "$f" && pf=" (path-filtered: runs only when matching files change, so it cannot be required)"
+  brs=$(pr_facts "$f" | cut -d'|' -f5)
+  case ",$brs," in *",$db,"*|*unknown*) ;; *) [ -n "$db" ] && pf="$pf (targets \`$brs\`, not \`$db\`: never require it on \`$db\`)" ;; esac
   [ -n "$pr" ] && say "pr_pipeline_check: Red Hat Konflux / $pr$pf"
 done
 
-say "== Workflow jobs (GitHub check names, for Step 10; matrix jobs appear as 'Name (value)')"
+say "== Workflow jobs (GitHub check names, for Step 11; matrix jobs appear as 'Name (value)')"
 [ "$WORKFLOWS_FOUND" = yes ] || say "workflows: none"
 list "$WORKFLOWS" | while read -r wf; do
   awk -v wf="$wf" '
@@ -341,7 +385,7 @@ say "validator_action_main_sha: ${vsha:-unknown (offline? fetch with: git ls-rem
 # table <title> <header row>: a blank line, the section title, the header and its separator.
 table() { say ""; say "== $1"; say "$2"; say "$(printf '%s' "$2" | awk -F'|' '{ s="|"; for (i=2; i<NF; i++) s=s "---|"; print s }')"; }
 say "== Screens (print verbatim in Step 1)"
-say "### ▶️ Step 1/11 Detected ecosystems"
+say "### ▶️ Step 1/12 Detected ecosystems"
 if [ "$konflux" != yes ]; then
   say "🛑 No \`.tekton/\` folder with Konflux markers, so this repo is not onboarded in Konflux and MintMaker does not run on it. This skill stops here: its rules build on MintMaker's global config, which nothing would apply. Onboarding: https://konflux-ci.dev/docs/"
   exit 0
@@ -356,9 +400,9 @@ say "| Ecosystem | Found in |"
 say "|---|---|"
 printf '%s' "$ROWS"
 if [ -z "$ACTIONS" ]; then
-  say ""; say "== Actions table (print verbatim in Step 5)"; say "$([ "$WORKFLOWS_FOUND" = yes ] && echo "workflows: found, no action used" || echo "workflows: none")"
+  say ""; say "== Actions table (print verbatim in Step 6)"; say "$([ "$WORKFLOWS_FOUND" = yes ] && echo "workflows: found, no action used" || echo "workflows: none")"
 else
-  table "Actions table (print verbatim in Step 5)" "| Action | Maintained by | Pinned by |"
+  table "Actions table (print verbatim in Step 6)" "| Action | Maintained by | Pinned by |"
   say "$ACTIONS" | awk '{
     rw = ($2 == "reusable-workflow"); style = rw ? $3 : $2
     if (style ~ /^sha\+version-comment/) s="SHA + version comment"
@@ -371,9 +415,9 @@ else
   }'
 fi
 if [ -z "$BASES" ]; then
-  say ""; say "== Base images table (print verbatim in Step 6)"; say "base_images: none"
+  say ""; say "== Base images table (print verbatim in Step 7)"; say "base_images: none"
 else
-  table "Base images table (print verbatim in Step 6)" "| Base image | Container files | Pinned by |"
+  table "Base images table (print verbatim in Step 7)" "| Base image | Container files | Pinned by |"
   # one row per image, with up to three of the files that use it, in order of first appearance
   say "$BASES" | awk -F': ' '{ img=$2; sub(/ \([^)]*\)$/, "", img); if (!(img in seen)) { seen[img]=1; order[++k]=img }
       if (index(" " files[img] " ", " " $1 " ") == 0) files[img] = files[img] (files[img] == "" ? "" : " ") $1 }
@@ -389,7 +433,7 @@ else
   done
 fi
 
-# Build toolchains, shown in the Step 4 table: the version pins every developer's tooling reads, not just CI's.
+# Build toolchains, shown in the Step 5 table: the version pins every developer's tooling reads, not just CI's.
 TC=""
 tcrow() { TC="$TC| $1 | \`$2\` | $3 |
 "; }
@@ -407,21 +451,29 @@ for f in $(list '(^|/)package\.json$'); do
   grep -qE '^[[:space:]]*"engines"[[:space:]]*:' "$f" && tcrow "npm engines" "$f" "$(sed -n -E 's/^[[:space:]]*"node"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/p' "$f" | head -1)"
 done
 if [ -z "$TC" ]; then
-  say ""; say "== Toolchains table (print verbatim in Step 4)"; say "toolchains: none"
+  say ""; say "== Toolchains table (print verbatim in Step 5)"; say "toolchains: none"
 else
-  table "Toolchains table (print verbatim in Step 4)" "| Toolchain | Pinned in | Version |"
+  table "Toolchains table (print verbatim in Step 5)" "| Toolchain | Pinned in | Version |"
   printf '%s' "$TC"
+fi
+if [ "$nbr" -le 1 ]; then
+  say ""; say "== Branches table (print verbatim in Step 2)"; say "branches: one, \`$(printf '%s\n' "$BRLINES" | awk '{print $2; exit}')\`"
+else
+  table "Branches table (print verbatim in Step 2)" "| Branch | Namespace | Pipelines |"
+  # the first pipeline, then +N for the others: one row per branch, whatever the number of components
+  printf '%s\n' "$BRLINES" | awk -v db="$db" '{ b=$2; ns=$3; f=$5; sub(/^namespace=/, "", ns); sub(/^pipelines=/, "", f); n=split(f, p, ",")
+    printf "| `%s`%s | `%s` | `%s`%s |\n", b, (b == db ? " (default)" : ""), ns, p[1], (n > 1 ? sprintf(", +%d", n-1) : "") }'
 fi
 if [ -n "$found" ]; then
   if [ -n "$(printf '%s' "$CFGTABLE" | tr -d '[:space:]')" ]; then
-    table "Renovate config table (print verbatim in Step 2)" "| Where | Setting | What happens |"
+    table "Renovate config table (print verbatim in Step 3)" "| Where | Setting | What happens |"
     printf '%s' "$CFGTABLE" | sed '/^$/d'
   else
-    say ""; say "== Renovate config table (print verbatim in Step 2)"; say "Nothing to remove from the existing config."
+    say ""; say "== Renovate config table (print verbatim in Step 3)"; say "Nothing to remove from the existing config."
   fi
   [ -n "$CFGKEPT" ] && say "$CFGKEPT"
 fi
 say ""
-say "== Manual-review candidates (the first Never-automerge option of Step 3; one manual-review rule each, under the manager whose files hold the package)"
+say "== Manual-review candidates (the first Never-automerge option of Step 4; one manual-review rule each, under the manager whose files hold the package)"
 if [ -n "$CANDS" ]; then printf '%s' "$CANDS"; else say "(none)"; fi
 exit 0

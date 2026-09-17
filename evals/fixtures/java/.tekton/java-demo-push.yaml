@@ -1,6 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
+  namespace: example-tenant
   name: java-demo-on-push
   annotations:
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"

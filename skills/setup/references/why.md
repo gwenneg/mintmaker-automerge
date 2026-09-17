@@ -163,7 +163,7 @@ Renovate has an option named for the job, `automergeSchedule`, and the
 skill does not use it. Its docs warn that with `platformAutomerge` on,
 Renovate asks GitHub to merge the PR when it creates it, so the window
 cannot be honoured, and that honouring it takes `platformAutomerge:
-false`. That would give up GitHub's auto-merge, which Step 10 shows is not
+false`. That would give up GitHub's auto-merge, which Step 11 shows is not
 a speed tip: Renovate's own merge waits for every check on the PR, the
 non-required scanner included, so one red scan holds every automerge.
 
@@ -201,3 +201,76 @@ automerge rules, for three reasons:
 - Automerge is the repo owner's trust decision. A preset moves it to
   whoever can merge in the shared repo, and changes there reach every
   consumer with no PR in their own repo.
+
+## Why a branch is switched off on its Konflux component, not in the config
+
+Two facts decide this. MintMaker creates one Renovate job per repository
+and branch: it walks the Konflux components, and the first one it meets
+for a branch gets the job, the others are skipped as duplicates (its docs
+say "randomly select one component"; the controller takes the first in
+its list). And Renovate reads the repository config from the default
+branch only, since `useBaseBranchConfig` defaults to `none`. Most users
+expect to switch a branch off in `renovate.jsonc`, so the four ways to
+try are listed here with what stops each of them.
+
+- **A package rule that disables the branch**, `matchBaseBranches` plus
+  `enabled: false`. It stops ordinary updates and nothing else. MintMaker's
+  global config sets `vulnerabilityAlerts` to `enabled: true`; Renovate
+  turns every GitHub or OSV alert into a package rule that carries that
+  object as a forced block, and `mergeChildConfig` applies forced values
+  at every merge, so a dependency with an open alert is re-enabled and
+  the fix PR opens on the branch. Package rules are also applied only
+  once dependencies exist, never at extraction, so they cannot keep
+  Renovate from reading the branch at all.
+- **A whitelist with `baseBranchPatterns`**, set to the default branch.
+  It does stop the other branch, but the value overrides the branch each
+  job was given, so every job now processes the default branch: two
+  identical jobs on it at the same time. MintMaker's docs describe the
+  case under "Potential issues with baseBranchPatterns configuration"
+  and say
+  "conflicts can occur leading to unexpected behavior". Their own
+  workaround is to disable MintMaker on all but one component, which is
+  the annotation below.
+- **A config file on the branch itself.** Nothing there is read unless the
+  default branch's file sets `useBaseBranchConfig: merge`, and then the
+  branch's file must carry the same name. `enabled: false` in it fails
+  for the reason above, the forced alert rules. `ignorePaths: ["**"]` does
+  work, since it removes every package file before any rule runs, but on
+  a branch that a job or a person refreshes from the default branch, the
+  next refresh brings the default branch's file back, so the switch does
+  not hold there.
+- **Disabling vulnerability alerts** to make the first route complete
+  turns them off for the default branch too, since the setting is
+  repository-wide.
+
+The switch MintMaker documents is the annotation
+`mintmaker.appstudio.redhat.com/disabled: "true"` on the Konflux
+component, set with `oc annotate`. The controller drops every annotated
+component before it walks the list, and creates a branch's job from any
+component left, so a branch stops only once all of its components carry
+the annotation, which the docs say in as many words: "when a repository
+or branch has multiple components, you must annotate each component
+individually". The value must be exactly `true`. Then no job runs on the
+branch, vulnerability fixes included, and nothing in the repository
+changes, which is why the switch survives a branch sync. Two consequences
+to know: no job means nobody closes the MintMaker PRs already open on the
+branch, and the Konflux UI has no code reading the annotation, so the only
+visible effect is that the component's Dependency updates tab stops
+receiving runs. The skill prints the commands and applies nothing, as
+with the GitHub settings.
+
+The login command comes from the Konflux UI's help menu, "Copy login
+command": `oc login <api server> --web -n <namespace>`, where `--web`
+authenticates in the browser. Installing `oc` is left to the OpenShift
+CLI documentation, which the how-to links; the skill prints no download
+command of its own, so a moved mirror or a new install path never dates
+it.
+
+Sources: MintMaker user docs, sections "Offboarding a repository" and
+"Potential issues with baseBranchPatterns configuration"; MintMaker's
+`dependencyupdatecheck_controller.go`, the disabled-annotation filter and
+the one-run-per-repository-and-branch loop; Renovate's docs for
+`useBaseBranchConfig`, `ignorePaths` and `vulnerabilityAlerts`, and its
+`lib/util/package-rules/index.ts` and `lib/config/utils.ts` for the
+forced block.
+
