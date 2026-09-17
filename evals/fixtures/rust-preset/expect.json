@@ -20,6 +20,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Write it"
     ],
     [
@@ -86,7 +89,9 @@
     "\"matchUpdateTypes\": [\"major\"]",
     "tokio",
     "whitesource/merge-confidence",
-    "\"tekton\""
+    "\"tekton\"",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": false"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -94,6 +99,7 @@
     "enabledManagers",
     "\"at any time\"",
     "\"matchManagers\": [\"dockerfile\"]",
-    "github-actions"
+    "github-actions",
+    "\"ignoreTests\": true"
   ]
 }

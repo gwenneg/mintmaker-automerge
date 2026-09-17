@@ -48,12 +48,11 @@ say "github_repo: ${slug:-unknown} (the repository the GitHub settings and the P
 say "origin_repo: ${origin_slug:-unknown}"
 if [ "$fork" = yes ]; then say "fork: yes (origin is a fork of github_repo, found via $fork_via; the PR branch is pushed to origin, the PR opened on github_repo)"; else say "fork: no"; fi
 if ! command -v gh >/dev/null 2>&1; then why="gh is not installed"; elif [ "$HAVE_GH" != yes ]; then why="gh is not logged in"; elif [ -z "$slug" ]; then why="no GitHub remote"; else why="gh cannot read the repository"; fi
-aam="not checked, $why"; role="not checked, $why"; otype=""; api_db=""
-if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .allow_auto_merge then "on" else "off" end) + " " + (if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
-  set -- $repo_facts; aam=$1; role=$2; otype=${3:-}; api_db=${4:-}
+role="not checked, $why"; otype=""; api_db=""
+if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
+  set -- $repo_facts; role=$1; otype=${2:-}; api_db=${3:-}
 fi
-say "allow_auto_merge: $aam (Settings › General › Pull Requests; Step 11 prints it)"
-say "github_role: $role (the role of the gh login on this repository; rulesets take admin, Allow auto-merge takes maintain)"
+say "github_role: $role (the role of the gh login on this repository; rulesets take admin)"
 
 db=""
 if [ "$fork" = yes ]; then
@@ -66,7 +65,7 @@ fi
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
-say "== Branch rules (Step 11: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+say "== Branch rules (Step 12: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
@@ -98,8 +97,7 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
-say "== Step 11 status (one verdict per setting, printed verbatim on the Currently lines)"
-case "$aam" in on) say "status_auto_merge: ✅ on, nothing to do" ;; off) say "status_auto_merge: ⚠️ off, turn it on" ;; *) say "status_auto_merge: $aam" ;; esac
+say "== Step 12 status (one verdict per setting, printed verbatim on the Currently lines)"
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
   say "status_bypass: not checked, $why"
@@ -117,19 +115,18 @@ else
   fi
 fi
 
-say "== Links (Step 11: the GitHub pages where the three settings live, built from the remote URL, no gh needed)"
+say "== Links (Step 12: the GitHub pages where the two settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
-  say "settings_general: https://github.com/$slug/settings (Allow auto-merge is under Pull Requests)"
   say "settings_rulesets: https://github.com/$slug/settings/rules"
   [ -n "$checks_id" ] && say "settings_ruleset_checks: https://github.com/$slug/settings/rules/$checks_id (the ruleset holding the required checks)"
   [ -n "$pr_id" ] && say "settings_ruleset_approval: https://github.com/$slug/settings/rules/$pr_id (the ruleset holding the pull request rule)"
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
   case "$otype" in
     User) say "settings_org_rulesets: none (the owner is a user account)" ;;
-    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 11)" ;;
-    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 11)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 12)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 12)" ;;
   esac
 fi
 
@@ -204,7 +201,7 @@ bases() {
 }
 BASES=$(bases)
 
-say "== Other updaters (Step 9: Dependabot entries, and workflows that update base images on their own)"
+say "== Other updaters (Step 10: Dependabot entries, and workflows that update base images on their own)"
 # A workflow that mentions base images outside comments and writes changes back (a PR action or a push).
 ou=$(list "$WORKFLOWS" | while read -r wf; do
   grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -281,6 +278,8 @@ if [ -n "$found" ]; then
       $0 ~ key("baseBranchPatterns|baseBranches") { r("`baseBranchPatterns`", "⚠️ removed, MintMaker sets it per Konflux component") }
       $0 ~ key("minimumReleaseAge") { r("`minimumReleaseAge`", "⚠️ redundant, MintMaker sets it globally; removed") }
       $0 ~ key("enabledManagers") { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
+      $0 ~ key("platformAutomerge") { r("`platformAutomerge`", "⚠️ replaced by false: GitHub'"'"'s auto-merge never completes when a bypass actor meets the approval rule") }
+      $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ replaced by the Step 9 gate choice") }
     ' "$c")
 "
     grep -q -E "$(key packageRules)" "$c" && CFGKEPT="Existing package rules are kept and reviewed with the new ones."
@@ -353,7 +352,7 @@ list '^\.tekton/.*\.ya?ml$' | while read -r f; do
   [ -n "$pr" ] && say "pr_pipeline_check: Red Hat Konflux / $pr$pf"
 done
 
-say "== Workflow jobs (GitHub check names, for Step 11; matrix jobs appear as 'Name (value)')"
+say "== Workflow jobs (GitHub check names, for Step 12; matrix jobs appear as 'Name (value)')"
 [ "$WORKFLOWS_FOUND" = yes ] || say "workflows: none"
 list "$WORKFLOWS" | while read -r wf; do
   awk -v wf="$wf" '
@@ -385,7 +384,7 @@ say "validator_action_main_sha: ${vsha:-unknown (offline? fetch with: git ls-rem
 # table <title> <header row>: a blank line, the section title, the header and its separator.
 table() { say ""; say "== $1"; say "$2"; say "$(printf '%s' "$2" | awk -F'|' '{ s="|"; for (i=2; i<NF; i++) s=s "---|"; print s }')"; }
 say "== Screens (print verbatim in Step 1)"
-say "### ▶️ Step 1/12 Detected ecosystems"
+say "### ▶️ Step 1/13 Detected ecosystems"
 if [ "$konflux" != yes ]; then
   say "🛑 No \`.tekton/\` folder with Konflux markers, so this repo is not onboarded in Konflux and MintMaker does not run on it. This skill stops here: its rules build on MintMaker's global config, which nothing would apply. Onboarding: https://konflux-ci.dev/docs/"
   exit 0

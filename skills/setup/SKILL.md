@@ -9,7 +9,7 @@ allowed-tools:
 
 # Renovate automerge setup
 
-A guided conversation in twelve short steps that ends with a reviewed Renovate config on a branch, an open PR, and the GitHub settings in place.
+A guided conversation in thirteen short steps that ends with a reviewed Renovate config on a branch, an open PR, and the GitHub settings in place.
 Automerge is a trust decision, so the user makes every consequential choice; your job is to make each choice small, well framed and quick to answer, and to teach just enough along the way.
 
 ## Rules
@@ -17,14 +17,14 @@ Automerge is a trust decision, so the user makes every consequential choice; you
 The user is in a terminal.
 Claude Code renders Markdown tables, bold, code and emoji, and AskUserQuestion draws a selection menu.
 
-**The shape of a step.** Every step, 1 to 12, is one reply in two parts, in this order: the screen, as ordinary assistant text, then the step's one AskUserQuestion call, which ends the reply; the answer starts the next.
-The screen opens with the header `### ▶️ Step N/12 <title>`, then a table or a few bullets with what was found and at most one 💡 note, under about twelve lines.
+**The shape of a step.** Every step, 1 to 13, is one reply in two parts, in this order: the screen, as ordinary assistant text, then the step's one AskUserQuestion call, which ends the reply; the answer starts the next.
+The screen opens with the header `### ▶️ Step N/13 <title>`, then a table or a few bullets with what was found and at most one 💡 note, under about thirteen lines.
 Nothing comes between the two parts, no tool call and no line; whatever a step needs to read or run comes before the screen.
 Claude Code renders text in full and folds only thinking into a one-line summary, so a reply that goes from an answer straight to a menu call shows the user nothing.
 
 The reply to an answer opens with the next step's header: no acknowledgement, no announcement, no extra question, and nothing before the header, a skipped step included, whose `Skipped:` line comes after its header and is followed by the next screen, never by a question.
-A step the report makes moot still prints its full `### ▶️ Step N/12 <title>` header line, then one line saying why, then the next step's full screen in the same reply.
-A step closes with a plain line only where this file spells one out, because it carries a fact the user needs; the exceptions to the shape are written out where they apply: the how-to of Step 2, Step 8's closing line, the `.jsonc` case of Step 3, and the write phase of Step 10.
+A step the report makes moot still prints its full `### ▶️ Step N/13 <title>` header line, then one line saying why, then the next step's full screen in the same reply.
+A step closes with a plain line only where this file spells one out, because it carries a fact the user needs; the exceptions to the shape are written out where they apply: the how-to of Step 2, Step 8's closing line, the `.jsonc` case of Step 3, and the write phase of Step 11.
 
 **Menus.** Every decision is an AskUserQuestion, all of a step's questions in one call, up to four.
 The recommended option comes first with "(Recommended)" inside its label, as in `Rename to renovate.jsonc (Recommended)`, exactly one per question, in a multi-select too; the mark does not show in a description. The one question without it is the Branches question of Step 2: whether a branch keeps getting MintMaker PRs is not this skill's call.
@@ -35,11 +35,11 @@ After the follow-up, go on to the next step.
 
 **Notes and emoji.** The 💡 notes in this file are shown where they stand, verbatim, one or two sentences each: they are how the user learns what Renovate and MintMaker do while deciding.
 When the user asks why, answer from `references/why.md` in a few lines.
-Emoji, each with one meaning: ⚠️ needs attention, as a table status or a one-line warning where this file places one, ✅ its opposite, as a table status or opening a Currently line of Step 11, 🟢 automerges, 🛑 stays manual, 💡 a note, ▶️ before every step header, 🤖 once in the welcome title, 1️⃣ 2️⃣ 3️⃣ the three settings of Step 11, each followed by two spaces, since terminals draw a keycap wider than they count it.
+Emoji, each with one meaning: ⚠️ needs attention, as a table status or a one-line warning where this file places one, ✅ its opposite, as a table status or opening a Currently line of Step 12, 🟢 automerges, 🛑 stays manual, 💡 a note, ▶️ before every step header, 🤖 once in the welcome title, 1️⃣ 2️⃣ the two settings of Step 12, each followed by two spaces, since terminals draw a keycap wider than they count it.
 None in prose.
 
 **The report.** The bundled `scripts/detect.sh` scanned the repository when this skill loaded; its output is under "Repo facts" below.
-It is read-only, looks at tracked files only, and is never run again: Steps 1 to 10 read from it.
+It is read-only, looks at tracked files only, and is never run again: Steps 1 to 11 read from it.
 Its last sections hold the Step 1 and 3 screens, the Step 2 table, the Step 4 candidates and the Step 5, 6 and 7 tables, ready to print verbatim.
 Only when the report is missing entirely, detect by hand from `git ls-files`, never `find`, which walks `node_modules/`, `target/` and vendored directories.
 
@@ -63,10 +63,10 @@ Print this verbatim on every run, the stop path included, then the Step 1 screen
 This plugin turns on automerge for the dependency updates you decide are low-risk, gated by your CI checks and by MintMaker's release-age delay. Everything else still needs a reviewer, human or AI, so your attention goes to the updates that deserve it.
 
 How this works:
-- Twelve short steps, a few quick decisions along the way, about twenty minutes end to end.
-- The config is written only after you approve the summary, in Step 10.
-- GitHub settings are checked and explained in Step 11, each with a link to its page, but never changed by this skill: you apply them yourself, which requires the Admin role on the repository.
-- The PR is opened only after you approve it, in Step 12.
+- Thirteen short steps, a few quick decisions along the way, about twenty minutes end to end.
+- The config is written only after you approve the summary, in Step 11.
+- GitHub settings are checked and explained in Step 12, each with a link to its page, but never changed by this skill: you apply them yourself, which requires the Admin role on the repository.
+- The PR is opened only after you approve it, in Step 13.
 ```
 
 ## Step 1: Detected ecosystems
@@ -74,7 +74,7 @@ How this works:
 The report's Screens section holds this screen: the Konflux check line and the ecosystems table, or the stop message.
 Print it verbatim, tables included.
 On the stop message the conversation ends there: this skill only applies to repos onboarded in Konflux, and improvising a generic Renovate setup is not it.
-The table lists the ecosystems found and the files behind them; what automerges is decided in Steps 4 to 8 and shown in Step 10.
+The table lists the ecosystems found and the files behind them; what automerges is decided in Steps 4 to 8 and shown in Step 11.
 Under the table, not on the stop message, this note:
 
 💡 MintMaker already opens PRs for every ecosystem in this table. The next steps only decide which of those PRs stop waiting for you.
@@ -82,13 +82,13 @@ Under the table, not on the stop message, this note:
 Only when the report's `ignored_by_renovate` line names files, add one sentence to the note naming them: MintMaker inherits Renovate's `config:recommended`, which skips dependency files under `test/`, `tests/`, `examples/`, `vendor/` and similar directories, so those files never get a PR.
 
 Ask, header "Ecosystems": Looks right (Recommended) / Needs a correction, the fix typed as the answer, since detection can be wrong, a `pom.xml` kept for a subproject nobody builds.
-The screen's Repository line is the report's `github_repo`, the upstream when `fork: yes`; a correction naming another repository replaces it for Steps 11 and 12, and Step 11's current-state lines then read `not checked, repository corrected in Step 1`.
+The screen's Repository line is the report's `github_repo`, the upstream when `fork: yes`; a correction naming another repository replaces it for Steps 12 and 13, and Step 12's current-state lines then read `not checked, repository corrected in Step 1`.
 When the default branch is `unknown`, add a "Default branch" question to the same call, with the report's `current_branch` as the recommended option.
 
 ## Step 2: Branches MintMaker updates
 
 The report's Branches section lists the branches MintMaker runs on, read from the pull-request pipelines in `.tekton/`, one line per branch with its namespace and every Konflux component and pipeline that targets it; the Screens section holds this step's table, one row per branch with the first pipeline and a `+N` for the others.
-One branch in the report: print the header `### ▶️ Step 2/12 Branches MintMaker updates`, then one line, `Skipped: MintMaker runs on one branch, \`<branch>\`.`, then the Step 3 screen in the same reply.
+One branch in the report: print the header `### ▶️ Step 2/13 Branches MintMaker updates`, then one line, `Skipped: MintMaker runs on one branch, \`<branch>\`.`, then the Step 3 screen in the same reply.
 Otherwise the header, the table verbatim, this note, then one question.
 
 💡 Renovate reads this repo's config from the default branch only, and MintMaker runs one job per branch in this table, so the rules you choose next apply to every branch here. The Renovate config cannot switch a branch off: security fixes still get PRs there, and `baseBranchPatterns` makes the jobs of the other branches run on `<default_branch>` too, two identical jobs at once, which MintMaker warns leads to conflicts. The only switch is in Konflux: an annotation on each component that builds the branch, set with `oc`.
@@ -99,7 +99,7 @@ When the report's `oc:` line says yes, the install line of the how-to is left ou
 Header "Branches", question "Should MintMaker stop opening PRs on one of these branches?", no option marked recommended: `No, keep MintMaker on every branch`, the rules chosen next apply to all of them / one option per branch other than the default, `Show me how to switch it off on <branch>`, the steps printed next, once per component of the branch, nothing applied by this skill.
 More than three such branches: one option `Show me how to switch it off on a branch I'll name`, the branch typed as the answer.
 On "No", the reply opens with the Step 3 header.
-On a branch, the reply opens with the how-to below for that branch, its placeholders filled from the report's `branch:` line, and ends with one more question, header "Next", question "Ready to move on to the Renovate config?": `Yes, go to the next step (Recommended)` / `I need more with this step`. On the second, explain from `references/why.md` in a few lines, answer what the user asks, then ask again; on the first, the reply opens with the Step 3 header. The how-to is the one place a reply to an answer does not open with a step header, and Step 2 the one step with a second question of its own.
+On a branch, the reply opens with the how-to below for that branch, its placeholders filled from the report's `branch:` line, and ends with one more question, header "Next", question "Ready to move on to the Renovate config?": `Yes, go to the next step (Recommended)` / `I need more help with this step`. On the second, explain from `references/why.md` in a few lines, answer what the user asks, then ask again; on the first, the reply opens with the Step 3 header. The how-to is the one place a reply to an answer does not open with a step header, and Step 2 the one step with a second question of its own.
 The how-to shows one component, the first of the report's `components=` list, under a line saying the steps are done for each component, since MintMaker's docs say a branch with several components needs each one annotated.
 A `namespace` or a component the report gives as `unknown` stays a placeholder, with one line saying the Konflux UI shows both on the component's page.
 
@@ -127,7 +127,7 @@ To undo it, remove the annotation from each component with a trailing dash: `oc 
 ## Step 3: Renovate config file
 
 The report names every config file found, with its full content and the other files that name it, and its Screens section holds this step's table: what gets removed or is redundant, which presets were read, or one plain line when there is nothing of the kind.
-Every ⚠️ row is removed in Step 10, for the reason the row gives; existing custom rules are preserved.
+Every ⚠️ row is removed in Step 11, for the reason the row gives; existing custom rules are preserved.
 When a row names a shared preset, its content is in the report: say what it sets under the table, in particular a `minimumReleaseAge` shorter than MintMaker's.
 Only when the report says it could not fetch it, read it before the screen.
 
@@ -148,7 +148,7 @@ For the library ecosystems found (Maven, Gradle, Go, npm, Python, Cargo, Bundler
 The report's manual-review candidates are not listed on the screen; they are the first option of the second question.
 
 ```
-### ▶️ Step 4/12 Libraries
+### ▶️ Step 4/13 Libraries
 
 Proposed rule for <the library ecosystems found, e.g. Go modules and npm>: patch and minor bumps merge on their own once CI passes, majors stay on manual review. Narrow or widen it below.
 ```
@@ -157,7 +157,7 @@ Proposed rule for <the library ecosystems found, e.g. Go modules and npm>: patch
 
 Header "Scope": Every patch and minor bump (Recommended) / Development dependencies only, where the manager knows the difference, npm does / Only packages I'll name, the names in a follow-up / Decide per ecosystem, one question per ecosystem with the first three scopes.
 
-Header "Never automerge", question "Any packages that should never be automerged, whatever the scope?", multiSelect: one option per candidate of the report, marked (Recommended), the report's reason as its description, several candidates folded into one option / Other packages, I'll name them, the names in a follow-up / None, marked (Recommended) when the report has no candidate.
+Header "Never automerge", question "Any packages that should never be automerged, whatever the scope?", multiSelect: one option holding every candidate of the report, all named in its label and marked (Recommended), their reasons as its description, never one option per candidate / Other packages, I'll name them, the names in a follow-up / None, marked (Recommended) when the report has no candidate.
 These packages still get PRs, on manual review whatever the update type.
 
 Header "Majors", question "Any packages whose major bumps may automerge too?": No package, majors stay on manual review (Recommended) / Yes, for packages I'll name.
@@ -168,7 +168,7 @@ Header "Go indirect", when `go.mod` was found: Automerge indirect dependencies t
 
 ## Step 5: Build toolchains
 
-`toolchains: none` in the report: print the header `### ▶️ Step 5/12 Build toolchains`, then one line, `Skipped: no build toolchain pinned in this repo.`, then the Step 6 screen in the same reply.
+`toolchains: none` in the report: print the header `### ▶️ Step 5/13 Build toolchains`, then one line, `Skipped: no build toolchain pinned in this repo.`, then the Step 6 screen in the same reply.
 Otherwise the header, the report's toolchains table verbatim, the note, then one question.
 
 💡 These are every developer's build tool, not just CI's: `mvnw` and `gradlew` download the version they pin, the `toolchain` line of `go.mod` makes the `go` command fetch that exact compiler, and `packageManager` is what corepack installs. Renovate bumps them like any dependency, so they get a rule of their own instead of falling under the patch-and-minor rules of Step 4.
@@ -177,12 +177,12 @@ Header "Toolchains": Keep manual (Recommended), updates are rare and a bad one b
 
 ## Step 6: GitHub Actions
 
-No workflow in the report: print the header `### ▶️ Step 6/12 GitHub Actions`, then one line, `Skipped: no GitHub workflows in this repo.`, then the Step 7 screen in the same reply.
+No workflow in the report: print the header `### ▶️ Step 6/13 GitHub Actions`, then one line, `Skipped: no GitHub workflows in this repo.`, then the Step 7 screen in the same reply.
 Otherwise the header, the report's actions table verbatim, the note, then three questions in one call.
 
 💡 In March 2025 the `tj-actions/changed-files` action was hijacked: every release tag was moved to a malicious commit, so workflows pinned to a tag ran it and workflows pinned to a SHA did not. With a SHA pin, a moved tag becomes a PR that never automerges; with a tag pin, CI runs the new code with no PR at all.
 
-Header "Pin actions", only when the table has tag-pinned actions: Pin every action to a SHA (Recommended), Renovate opens one manual PR per action to replace the tag with its SHA and a version comment / Don't pin, the allow-list then guards version bumps only, not moved tags.
+Header "Pin actions", only when the table has an action pinned by tag, a reusable workflow not counting: Pin every action to a SHA (Recommended), Renovate opens one manual PR per action to replace the tag with its SHA and a version comment / Don't pin, the allow-list then guards version bumps only, not moved tags.
 
 Header "Allow-list", multiSelect, options built from the table's "Maintained by" column: Actions maintained by GitHub (Recommended), the `actions/*` and `github/*` ones, named in the description / Third-party actions, the rest, named with their owners / I'll type which ones to allow.
 Both groups ticked allows every action; a typed answer replaces the groups.
@@ -193,10 +193,10 @@ Header "Majors", question "Any actions whose major bumps may automerge too?": No
 
 ## Step 7: Base images
 
-No container file in the report: print the header `### ▶️ Step 7/12 Base images`, then one line, `Skipped: no container file in this repo.`, then the Step 8 screen in the same reply.
+No container file in the report: print the header `### ▶️ Step 7/13 Base images`, then one line, `Skipped: no container file in this repo.`, then the Step 8 screen in the same reply.
 Otherwise the header, the report's base images table verbatim, the note, then up to two questions in one call, the second only when relevant.
 
-💡 The release-age delay does not cover most base images: Renovate only learns publish dates from Docker Hub, and MintMaker treats a release without one as old enough. For an image from `registry.access.redhat.com` or `quay.io`, your required checks are the only protection, and the Konflux PR build is the check that actually builds on the new base: remember that in Step 11.
+💡 The release-age delay does not cover most base images: Renovate only learns publish dates from Docker Hub, and MintMaker treats a release without one as old enough. For an image from `registry.access.redhat.com` or `quay.io`, your required checks are the only protection, and the Konflux PR build is the check that actually builds on the new base: remember that in Step 12.
 
 Header "Base images": Automerge digest, patch and minor bumps (Recommended), the Konflux PR build builds the image and the tests run on it, majors such as a new RHEL or JDK line stay manual / Keep them manual.
 Header "Pin base images", only when an image has no digest: Pin to `tag@sha256` (Recommended), Renovate opens one manual pin PR, after which rebuilds of the same tag arrive as digest PRs / Keep tags only, rebuilds then go unnoticed.
@@ -209,7 +209,7 @@ The automerge option then says "digest updates" rather than "patch and minor".
 The screen is the header and the framing line, printed verbatim, then the menu.
 
 ```
-### ▶️ Step 8/12 Merge days
+### ▶️ Step 8/13 Merge days
 
 Renovate opens, rebases and merges PRs only on the days chosen below; vulnerability fix PRs ignore them. The Konflux pipeline follows its own schedule, the second question.
 ```
@@ -218,14 +218,27 @@ Two questions in one call.
 Header "Merge days", question "On which days may updates open and merge?": Any day (Recommended), MintMaker runs every four hours and a bump merges within hours of clearing the release-age delay / Monday to Thursday, no PR opens, rebases or merges from Friday to Sunday, UTC, so a bump due on a Friday waits for Monday / Other days, I'll type them, the days in a follow-up.
 Header "Pipeline": Konflux pipeline updates on the same days as the rest (Recommended), within hours of a catalog bump, since task bundles carry no publish date for the release-age delay / Keep MintMaker's Saturday batch, pipeline PRs then open and merge on Saturdays whatever the merge days say.
 When the report flags path-filtered PR pipelines, add a third option, Keep pipeline updates manual, and say in the question why: a path-filtered pipeline cannot be a required check, so a `tekton` PR for it would merge before its build reports.
-
 Close the step with one line: `Rules chosen.
-Summary in Step 10.`
-That line opens the reply to this step's answer, and the same reply goes on with the Step 9 screen, or its Skipped line and the Step 10 screen: nothing of it is held back for a later reply.
+Summary in Step 11.`
+That line opens the reply to this step's answer, and the same reply goes on with the Step 9 screen: nothing of it is held back for a later reply.
 
-## Step 9: Other updaters
+## Step 9: Merge gate
 
-`dependabot.yml: none` and `base_image_workflows: none` in the report: print the header `### ▶️ Step 9/12 Other updaters`, then one line, `Skipped: no other updater in this repo.`, then the Step 10 screen in the same reply.
+The screen is the header and the note, then one question.
+
+```
+### ▶️ Step 9/13 Merge gate
+```
+
+💡 GitHub's auto-merge feature cannot be used with MintMaker: a GitHub bug, reported since January 2025 and still not fixed, leaves a PR unmerged forever when the approval comes from a bypass, which is how the Konflux app merges. So Renovate merges each PR itself, by default only once every check on the PR passes, so a flaky or permanently red check blocks it. The alternative is to have Renovate ignore the checks and leave the gate to the base branch's `Required` checks in GitHub.
+
+Header "Merge gate", question "Which checks must pass before Renovate merges a PR?": `Keep the checks: Renovate merges only when 100% of them pass (Recommended)`, every check on the PR, required or not, must be green, so one red check holds the PR until someone fixes it / `Skip the checks in Renovate, GitHub's required checks are the gate`, described as: Risky. Sets `ignoreTests`: Renovate asks GitHub to merge without reading any check, and only the required checks of the base branch stop it, so with none a PR merges on red CI. For a repository where a check can turn red for reasons outside the PR, an unstable or permanently red scan for instance, and only with a gate chosen with care in Step 12.
+The second option is the one for a repository where a check may go red for reasons outside the PR; it is never the recommended one, and the description carries its risk in full.
+The reply to the answer opens with the Step 10 header, Other updaters, and that step prints its Skipped line when the report has none, before the summary; the summary of Step 11 carries the warning line when the required checks are the only gate.
+
+## Step 10: Other updaters
+
+`dependabot.yml: none` and `base_image_workflows: none` in the report: print the header `### ▶️ Step 10/13 Other updaters`, then one line, `Skipped: no other updater in this repo.`, then the Step 11 screen in the same reply.
 Otherwise two updaters on one ecosystem race to open a PR for the same bump: the screen is the header, one table of every other updater found, then the note, then the questions in one call.
 
 Columns: updater, what it covers, status.
@@ -241,20 +254,21 @@ Header "Base image workflow", only when a workflow row overlaps: Remove it, Reno
 Header "Dependabot", only when `dependabot.yml` exists: every entry overlapping, Remove `dependabot.yml` (Recommended) / Keep it, two PRs per bump; some entries not overlapping, Narrow it to the entries Renovate doesn't cover (Recommended) / Remove it entirely / Keep it.
 Next to the Remove option: this removes Dependabot version updates only; the Dependabot alerts setting under Settings, Advanced Security stays on, because Renovate's vulnerability fix PRs are built from those alerts.
 
-The answers are applied in Step 10, after "Write it", never here.
+The answers are applied in Step 11, after "Write it", never here.
 
 ## The config blocks
 
-Assemble the config in Step 10 from the two blocks below, driven by the answers of Steps 4 to 8.
+Assemble the config in Step 11 from the two blocks below, driven by the answers of Steps 4 to 8.
 Never fetch an example config from another repository: these blocks are the reference.
 
 ### The skeleton
 
 Header comment, the optional `extends` block for action pinning, the `tekton` block, and a `{{PACKAGE_RULES}}` placeholder.
 Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
-Merge days other than any day add the two lines of the merge-days block below, right after the header comment, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
+The `ignoreTests` line and its comment become the gate block below when Step 9 chose the required checks as the only gate.
+Merge days other than any day add the two lines of the merge-days block below, right after the gate, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
 Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
-The days are a `schedule`, not an `automergeSchedule`: Renovate ignores the latter once GitHub's auto-merge is on, and the schedule bounds the merge because a PR merges as soon as the checks of its last rebase pass.
+The days are a `schedule`, not an `automergeSchedule`: MintMaker sets `updateNotScheduled` to false, so a run outside the days skips an existing branch before any merge attempt, and one option bounds the pushes and the merges alike.
 The comments are part of the file the user keeps: copy them as they are, never add instructions meant for you, and never restate what the header already says.
 
 ```jsonc
@@ -270,6 +284,12 @@ The comments are part of the file the user keeps: copy them as they are, never a
   // the required checks pass. Majors stay on manual review unless a rule names them.
   // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
   // Automerge set up with the MintMaker Automerge plugin: https://github.com/gwenneg/mintmaker-automerge
+  // Renovate merges each PR itself, on the first run where GitHub allows the merge:
+  // GitHub's auto-merge feature never completes when a bypass actor is what satisfies
+  // the approval rule, so it stays off.
+  "platformAutomerge": false,
+  // Every check on the PR must be green first, required or not.
+  "ignoreTests": false,
   "extends": [
     // Pins actions to commit SHAs, so a version bump can be told from a moved tag.
     "helpers:pinGitHubActionDigests"
@@ -284,6 +304,15 @@ The comments are part of the file the user keeps: copy them as they are, never a
     {{PACKAGE_RULES}}
   ]
 }
+```
+
+The gate block, in place of the `ignoreTests` line and its comment:
+
+```jsonc
+  // The required checks of the base branch are the whole gate: Renovate asks for
+  // the merge without reading any check, and GitHub refuses until they pass.
+  // A non-required check never holds a merge, red or not.
+  "ignoreTests": true,
 ```
 
 The merge-days block, here for Monday to Thursday:
@@ -301,7 +330,7 @@ Copy the blocks for the detected ecosystems into the placeholder, fill the names
 Rules apply in order and a later rule overrides an earlier one, so a manual-review rule or a majors rule goes after the ecosystem rule it narrows or widens.
 Everything MintMaker's global config already sets stays out of the file; if the user asks for a key the blocks don't have, check the global config first, since a duplicate drifts out of sync.
 
-Each ecosystem opens with a separator line that states its decision, the same facts as its row of the Step 10 table: what merges on its own, then what stays manual.
+Each ecosystem opens with a separator line that states its decision, the same facts as its row of the Step 11 table: what merges on its own, then what stays manual.
 That line is the comment of the plain patch-and-minor rule, which carries none of its own.
 A rule that narrows or widens the policy carries one or two lines saying why, and nothing else: no "optional", no "delete if", no restating of the policy.
 
@@ -458,20 +487,20 @@ How the answers map to the blocks:
 - Majors: one block per manager; for GitHub Actions use `matchDepNames` instead of `matchPackageNames`.
   The user's reason from the follow-up is the comment.
 
-## Step 10: Summary
+## Step 11: Summary
 
 **Nothing touches the working tree before the "Write it" answer.** Up to that answer the skill has only read files and asked questions, and `git status` looks exactly as it did when the skill started.
-No Write, no Edit, no `git rm` or `git mv`, no doc update, no removal decided in Step 9, and no name check that needs the file to exist.
+No Write, no Edit, no `git rm` or `git mv`, no doc update, no removal decided in Step 10, and no name check that needs the file to exist.
 The menu labels below are fixed: a menu that says the files are already written means the order was wrong, not that the labels need adapting.
 
 Show the whole trust decision in one table: one row per detected ecosystem, one for the Konflux pipeline, one for vulnerability fixes, one for the build toolchains when the report lists any, and one row per ecosystem found that gets no rule.
 This screen is never skipped and never shortened, whatever came before it, and the "Write it" menu is not asked until it has been printed: the user approves what they see in that table, nothing else.
-Below it, one line with the merge days when they are not any day, the cron said in words, then one line with the Step 9 decision, when there was one, then one line with the branch switched off in Step 2, when one was, `MintMaker: to be switched off on \`<branch>\` by annotating its component(s) \`<components>\` yourself; the rules above stop applying there.`, then one line saying what the answer does: it writes files in the working tree, nothing more.
+Below it, one line with the merge days when they are not any day, the cron said in words, then one line with the Step 10 decision, when there was one, then one line with the branch switched off in Step 2, when one was, `MintMaker: to be switched off on \`<branch>\` by annotating its component(s) \`<components>\` yourself; the rules above stop applying there.`, then, when Step 9 chose the required checks as the only gate, `⚠️ Merge gate: the required checks of \`<default_branch>\` only. A non-required check never holds a merge, and without any required check a PR merges on red CI.`, then one line saying what the answer does: it writes files in the working tree, nothing more.
 The pipeline row says "any day" when the merge days are any day, "Saturdays" when the batch was kept.
-Nothing is committed or pushed before Step 12.
+Nothing is committed or pushed before Step 13.
 
 ```
-### ▶️ Step 10/12 Summary
+### ▶️ Step 11/13 Summary
 
 | Ecosystem | 🟢 Automerges | 🛑 Stays manual | Why |
 |---|---|---|---|
@@ -486,7 +515,7 @@ Merge days: Monday to Thursday, UTC. Vulnerability fixes still arrive and merge 
 
 Dependabot: `dependabot.yml` removed, alerts stay on.
 
-Writing means editing files in your working tree. Nothing is committed or pushed until Step 12.
+Writing means editing files in your working tree. Nothing is committed or pushed until Step 13.
 ```
 
 Ask, header "Write it", labels `Write the files to disk (Recommended)`, described as local edits only, no commit, no push / `Change something`, with the free text saying what.
@@ -495,7 +524,7 @@ After the "Write the files" answer, and only then, the write phase, in this orde
 
 1. Build the config file, or edit the existing one, rename it when Step 3 said so, drop every ⚠️ row of the Step 3 table, and show the diff.
    When migrating an existing config, list what you removed or restructured and why, so a rewrite never quietly drops a rule the user still wants.
-2. Apply the Step 9 decisions: remove or narrow `dependabot.yml`, remove the base-image workflow, and update any doc that describes what they covered.
+2. Apply the Step 10 decisions: remove or narrow `dependabot.yml`, remove the base-image workflow, and update any doc that describes what they covered.
    Files those tools wrote, such as a digest tracking file, go with the workflow that wrote them; say so in one line.
 3. Check the names.
    The validator workflow below checks syntax and schema only: a misspelled package or action name passes and silently matches nothing.
@@ -540,14 +569,14 @@ Fill in `{{BASE_BRANCH}}` from Step 1, `{{CONFIG_FILENAME}}` from Step 3, `{{CHE
 
 💡 Never make this workflow a required check: it only runs when the config file changes, and GitHub blocks a PR forever when a required check never runs. With `strict: true`, it also fails when a setting in the file has been renamed or retired by Renovate, so you find out before MintMaker does.
 
-The write phase ends there, with no question: no "does this look right", no confirmation of the files, and no question about the pull request, which is Step 12's.
-With no question pending there is no answer to wait for, so the same reply goes on with the Step 11 header and the required-checks screen below, and the Checks menu comes only once that screen is printed.
+The write phase ends there, with no question: no "does this look right", no confirmation of the files, and no question about the pull request, which is Step 13's.
+With no question pending there is no answer to wait for, so the same reply goes on with the Step 12 header and the settings screen below, and the Settings menu comes only once that screen is printed.
 
-## Step 11: GitHub settings
+## Step 12: GitHub settings
 
 One screen, from this file, no tool call, then one menu.
-The `<...>` placeholders come from the report: `github_role` and `default_branch` in the Tooling section, the required checks in the Branch rules section, the URLs in the Links section, and the three verdicts of the Step 11 status section, printed verbatim on the Currently lines, ✅ or ⚠️ included; `not checked` where the report says so.
-Settings 1 and 3 each have two blocks below, a full one and a short one: the short block prints when the setting's verdict opens with ✅, the full block otherwise, `not checked` included.
+The `<...>` placeholders come from the report: `github_role` and `default_branch` in the Tooling section, the required checks in the Branch rules section, the URLs in the Links section, and the two verdicts of the Step 12 status section, printed verbatim on the Currently lines, ✅ or ⚠️ included; `not checked` where the report says so.
+Setting 1 has one gate paragraph in two variants, by the Step 9 answer; setting 2 has two blocks below, a full one and a short one: the short block prints when its verdict opens with ✅, the full block otherwise, `not checked` included.
 Each line that names a place ends with its URL, so the terminal makes it clickable; with no GitHub remote the report has none, and the words stand alone.
 Which checks to require is the user's decision: the skill suggests no list.
 `references/github-branch-protection.md` is the long form for "why?" questions, not to paraphrase into the screen.
@@ -555,22 +584,18 @@ Which checks to require is the user's decision: the skill suggests no list.
 The screen, with the full blocks:
 
 ```
-### ▶️ Step 11/12 GitHub settings
+### ▶️ Step 12/13 GitHub settings
 
-Three settings make automerge work and keep it safe. Changing them takes the Admin role on the repository (yours: <github_role>), and this skill changes none of them: you apply them in GitHub.
+Two settings make automerge work and keep it safe. Changing them takes the Admin role on the repository (yours: <github_role>), and this skill changes none of them: you apply them in GitHub.
 
-1️⃣  **Allow auto-merge**, under Pull Requests: <settings_general>
+Renovate merges each PR itself, on the first MintMaker run where GitHub allows the merge, because of a GitHub bug: when the approval rule of the base branch is satisfied only by a bypass actor, such as the Konflux app on its bypass list, GitHub's auto-merge feature arms on the PR and never completes. The PR stays blocked with every check green, on rulesets and on classic branch protection alike. Reported by users since January 2025, acknowledged by GitHub in March 2026 with "a fix is in the queue", still unfixed in September 2026. The merge request Renovate sends itself does honor the bypass, so the config turns GitHub's auto-merge feature off, and "Allow auto-merge" in the repository settings plays no part.
 
-Currently on this repository: <status_auto_merge>.
-
-Renovate marks each PR that matches your rules and asks GitHub to merge it. GitHub does so the moment the required checks pass, whatever the other checks do. With the setting off, Renovate merges the PR itself on a later run, and only once every check on it is green: one failing scan then holds every automerge.
-
-2️⃣  **Required status checks**, the rule "Require status checks to pass" in the ruleset for `<default_branch>`: <settings_ruleset_checks, or settings_rulesets when the report has none>
+1️⃣  **Required status checks**, the rule "Require status checks to pass" in the ruleset for `<default_branch>`: <settings_ruleset_checks, or settings_rulesets when the report has none>
 
 Currently required: <status_checks>
 - <one bullet per check in the report's required_checks, in backticks; no bullet when there is none>
 
-This is the gate: GitHub's auto-merge waits for these checks and for nothing else. Require what proves the PR's own change is good:
+<the gate paragraph>
 - the build, and the tests when they are a separate job
 - the Konflux PR pipeline, `Red Hat Konflux / <component>-on-pull-request`: the only check that runs an updated pipeline
 
@@ -578,11 +603,11 @@ Never require:
 - a check that skips some PRs, such as the config validator or `renovate/stability-days`: GitHub keeps it "Pending" forever
 - a check that goes red for reasons outside the PR, such as a vulnerability scan: one new advisory would block every PR
 
-3️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals.
+2️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals.
 
 Currently on this repository: <status_bypass>.
 
-That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else. Organization first: if an organization ruleset already lets `Red Hat Konflux` bypass the pull request rule, nothing to do here either; with many Konflux repositories in the organization, one such ruleset from an organization owner beats repeating this in each of them.
+That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else: the merge Renovate asks for honors the bypass, where GitHub's auto-merge feature does not. Organization first: if an organization ruleset already lets `Red Hat Konflux` bypass the pull request rule, nothing to do here either; with many Konflux repositories in the organization, one such ruleset from an organization owner beats repeating this in each of them.
 
 Per repository, on rulesets (recommended): the ruleset holding "Require a pull request before merging" › Bypass list › Add bypass › `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio` › "For pull requests only", so the app can never push straight to the branch: <settings_ruleset_approval, or settings_rulesets when the report has none>
 
@@ -591,53 +616,55 @@ On branch protection rules, only if the repository still uses them: the rule for
 ⚠️ Never let the app bypass the required checks. A bypass covers the whole ruleset, so if the ruleset holding the pull request rule also holds the required checks, move the pull request rule to a ruleset of its own before adding the bypass. On branch protection rules the bypass option is part of the pull request rule itself, so there is nothing to split.
 ```
 
-The short block of setting 1, in place of its full block when `status_auto_merge` opens with ✅:
+The gate paragraph of setting 1, when Step 9 kept every check:
 
 ```
-1️⃣  **Allow auto-merge**, under Pull Requests: <settings_general>
-
-Currently on this repository: <status_auto_merge>.
-
-Renovate marks each PR that matches your rules and asks GitHub to merge it. GitHub does so the moment the required checks pass, whatever the other checks do.
+GitHub enforces these on top of Renovate's own rule, which waits for every check on the PR to be green. Require what proves the PR's own change is good:
 ```
 
-The short block of setting 3, in place of its full block, the ⚠️ line included, when `status_bypass` opens with ✅:
+When Step 9 chose the required checks only:
 
 ```
-3️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals: <settings_ruleset_approval, or settings_rulesets when the report has none>
+⚠️ This list is the whole gate. Renovate asks for the merge without reading any check, and GitHub refuses it until these pass; a check missing from this list never holds a merge, red or not. Require what proves the PR's own change is good, and nothing less:
+```
+
+In that case, when `status_checks` opens with ⚠️, one more line under the bullets: `⚠️ With no required check, Renovate merges every matching PR on its next run whatever CI says. Set the checks before this PR merges, or change the gate.`
+
+The short block of setting 2, in place of its full block, the ⚠️ line included, when `status_bypass` opens with ✅:
+
+```
+2️⃣  **The Konflux app bypass**, only if the base branch requires a pull request with approvals: <settings_ruleset_approval, or settings_rulesets when the report has none>
 
 Currently on this repository: <status_bypass>.
 
 That rule blocks the app like anyone else, so the app needs to bypass it, and nothing else.
 ```
 
-Menu, header "Settings": `I read it, understood it, and will apply the three settings before automerge goes live (Recommended)` / `I'm not sure, help me understand`.
-When all three verdicts open with ✅, the first label is `I read it, understood it, and the three settings are in place (Recommended)` instead.
+Menu, header "Settings": `I read it, understood it, and will apply the two settings before automerge goes live (Recommended)` / `I'm not sure, help me understand`.
+When both verdicts open with ✅, the first label is `I read it, understood it, and the two settings are in place (Recommended)` instead.
 On the second, explain from the reference in a few lines, the ruleset splitting and the organization ruleset in particular, and answer what the user asks, with the report's "Konflux names" and "Workflow jobs" sections as illustration of this repository's check names, never as a list to set; then ask again.
 
 The answer is an acknowledgement, recorded as such in the PR body: the skill verifies nothing.
 
-## Step 12: Pull request, then what to expect
+## Step 13: Pull request, then what to expect
 
-The header `### ▶️ Step 12/12 Pull request`, one line, `Merging this PR is what turns automerge on.`, then this note:
+The header `### ▶️ Step 13/13 Pull request`, one line, `Merging this PR is what turns automerge on.`, then this note:
 
-💡 The new rules also apply to the PRs MintMaker already has open. On its next run, each one that matches is rebased and marked for GitHub's auto-merge, and merges once the required checks pass: the first unattended merges will most likely be those.
+💡 The new rules also apply to the PRs MintMaker already has open. On its next run, each one that matches is rebased, and it merges on the run after, once its checks pass: the first unattended merges will most likely be those.
 
 Then the menu, header "Ship it": Branch, commit, push and open the PR (Recommended) / Commit on a branch, I'll push myself / Stop here, keep the changes uncommitted.
 Nothing leaves the machine before that answer.
 Open the PR by the GitHub route available: `gh pr create`, `POST /repos/<github_repo>/pulls` with a token, or push the branch and give the link `https://github.com/<github_repo>/pull/new/<branch>` with the title and body to paste.
 When the report says `fork: yes`, the branch is pushed to `origin`, the fork, and the PR opened on `<github_repo>` with the head `<origin owner>:<branch>`: `gh pr create --repo <github_repo> --head <origin owner>:<branch>`, the same `head` in the `POST` body, or the link `https://github.com/<github_repo>/compare/<default_branch>...<origin owner>:<branch>?expand=1`.
 
-The PR body carries the three Step 11 settings as a checklist.
+The PR body carries the two Step 12 settings as a checklist.
 A tick records that the user read, understood and took on the setting, nothing more, so a reviewer checks the gate instead of trusting it:
 
-    Automerge starts when this PR merges. The plugin changes no GitHub
-    setting: the branch protection behind automerge is applied by hand.
-    During the setup, the author acknowledged the three settings below,
-    what each one does and that it is theirs to apply:
-    - [x] Allow auto-merge on the repository, so GitHub does the merging
-          and waits for the required checks alone: read, understood, to
-          be turned on before this PR merges
+    Automerge starts when this PR merges. Renovate merges each PR itself
+    once GitHub allows it. The plugin changes no GitHub setting: the
+    branch protection behind automerge is applied by hand. During the
+    setup, the author acknowledged the two settings below, what each one
+    does and that it is theirs to apply:
     - [x] Required status checks on the base branch, the gate: read,
           understood, to be set before this PR merges
     - [x] Konflux app bypass of the approval rule only, "For pull
@@ -645,10 +672,12 @@ A tick records that the user read, understood and took on the setting, nothing m
           understood, to be set if the base branch requires approvals
 
     The ticks record that acknowledgement, not a verified state.
-    Reviewer: check the three settings before merging.
+    Reviewer: check the two settings before merging.
 
-A setting whose Step 11 verdict opened with ✅ ends its item with `read, understood, already in place` instead of the `to be ...` clause.
-A box stays unticked when Step 11 ended without the "I read it" answer, and the body names what is still open.
+When Step 9 chose the required checks only, the first item reads `Required status checks on the base branch, the whole gate, since ignoreTests makes Renovate skip every other check: read, understood, to be set before this PR merges`, and the body carries one more line before the attribution: `The config sets ignoreTests: a non-required check never holds a merge. Reviewer: make sure the required checks are the ones that prove a change is good.`
+
+A setting whose Step 12 verdict opened with ✅ ends its item with `read, understood, already in place` instead of the `to be ...` clause.
+A box stays unticked when Step 12 ended without the "I read it" answer, and the body names what is still open.
 When Step 2 printed a how-to, one more paragraph before the attribution line: `MintMaker is being switched off on <branch> by annotating its Konflux component(s) <components>, by hand: the rules in this file stop applying there once it is.`
 The body ends with the attribution line, verbatim:
 
@@ -668,11 +697,11 @@ Once it is live:
 
 | When | What you'll see |
 |---|---|
-| Every 4 hours | MintMaker runs. Each PR that matches your rules opens marked for GitHub's auto-merge, and GitHub merges it the moment the required checks pass. With Allow auto-merge off, Renovate merges it itself on a later run, and only once every check on it is green. |
+| Every 4 hours | MintMaker runs. A PR opens on one run, and Renovate merges it on a later one, the first where GitHub allows the merge: hours after the checks went green, not minutes. Every check on the PR must be green, or the required checks alone when the config sets `ignoreTests`. |
 | Once the release-age delay has passed | The PR for it appears, `renovate/stability-days` already green. Held updates are invisible: the dependency dashboard is off. |
 | Right away | A vulnerability fix PR skips the release-age delay: a patch or minor fix in an automerged ecosystem merges as soon as the required checks pass, a fix that needs a major stays manual. Worth a look afterwards. |
 | One at a time | Each merge makes the other Renovate branches stale; they rebase and merge on later runs. |
 | In every PR body | `Automerge: Enabled` when the rules matched. Missing means the config didn't match that update: first thing to check. |
-| First unattended merge | A Konflux-app PR merged with green checks and no approval confirms the bypass. Until then it's unverified. |
+| First unattended merge | A PR merged by the Konflux app with no approval confirms the bypass. Until then it's unverified. |
 | Still waiting for you | Majors except the packages you named, the manual-review list, build toolchains unless you opted in, ecosystems without a rule. That is the intended scope. |
 ```

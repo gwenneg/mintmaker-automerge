@@ -145,9 +145,10 @@ MintMaker's `tekton` manager only reads `.tekton/**`. The updates are task
 bumps from the Konflux catalog, pinned by digest, and the pipeline
 migrations MintMaker runs alongside them with its post-upgrade tool. They
 are the pipeline itself, so the PR's own Konflux build runs the updated
-pipeline: if the migration breaks the build, the check fails. That only
-blocks the merge when the Konflux PR pipeline check is required, because
-GitHub's auto-merge waits for required checks alone. The block sets
+pipeline: if the migration breaks the build, the check fails. With the
+recommended gate, Renovate waits for every check, so that red check holds
+the PR; with the required checks as the only gate, it holds the PR only
+when it is required, which is why Step 12 says to require it. The block sets
 `automerge` for the whole manager, so every update type it produces is
 covered, the task replacements MintMaker configures included.
 
@@ -157,33 +158,50 @@ pipeline updates arrive within hours instead. Dropping the line keeps the
 weekly batch. When the repo has merge days, the line carries their cron
 instead, so the pipeline follows the same days.
 
+## Why GitHub's auto-merge feature is off, and what the gate choice means
+
+The generated file sets `platformAutomerge: false`. With the default,
+Renovate asks GitHub to enable its auto-merge feature on each PR it opens, and
+GitHub never completes that merge when the approval rule of the base
+branch is satisfied only by a bypass actor, which is exactly how the
+Konflux app merges without a human. The PR stays blocked with every check
+green. Reported since January 2025 on rulesets and classic protection
+alike, acknowledged by GitHub in March 2026, unfixed in September 2026;
+`references/github-branch-protection.md` has the dated sources. Renovate's
+own merge goes through the merge endpoint, which honors the bypass, so the
+skill turns the feature off and the "Allow auto-merge" repository
+setting no longer matters.
+
+That merge waits for every check on the PR's head commit, required or
+not. Step 9 makes this explicit as the recommended gate: keep the checks,
+and Renovate merges only when 100% of them pass. The alternative,
+`ignoreTests: true`, makes
+Renovate ask for the merge without reading any check, so the required
+checks of the base branch are the whole gate and a non-required scanner
+that stays red never holds a merge. It is offered as the risky option,
+for repositories where a check can turn red for reasons outside the PR,
+because with no required check a PR then merges on red CI. Which
+checks are required is decided in Step 12, and the PR body says the gate
+is the whole gate when this option was chosen.
+
 ## Why the merge days are a `schedule`, not an `automergeSchedule`
 
 Renovate has an option named for the job, `automergeSchedule`, and the
-skill does not use it. Its docs warn that with `platformAutomerge` on,
-Renovate asks GitHub to merge the PR when it creates it, so the window
-cannot be honoured, and that honouring it takes `platformAutomerge:
-false`. That would give up GitHub's auto-merge, which Step 11 shows is not
-a speed tip: Renovate's own merge waits for every check on the PR, the
-non-required scanner included, so one red scan holds every automerge.
-
-`schedule` limits when Renovate opens and rebases branches instead. With
-GitHub's auto-merge, a PR merges as soon as the checks of its last push
-pass, minutes to an hour after Renovate touched it, so bounding the
-pushes bounds the merges. MintMaker runs every four hours from 00:00 UTC,
-and its global config sets `updateNotScheduled` to false, so an existing
-branch is not rebased outside the schedule either. `* * * * 1-4` is
-Monday to Thursday in UTC, in the cron form MintMaker uses for its own
-schedules; Renovate's cron takes `*` for the minutes and reads it in
-UTC unless the `timezone` option names another. The last run inside the
-window is Thursday 20:00 UTC, so a PR from that run merges on Thursday
-afternoon in the Americas, Thursday evening in Europe and Friday morning
-further east; a `timezone` line moves the window to the team's clock.
+skill does not use it. `schedule` bounds when Renovate opens and rebases
+branches, and MintMaker's global config sets `updateNotScheduled` to
+false, so on a run outside the schedule an existing branch is skipped
+before any merge attempt: the merge waits for the next run inside the
+days, which is the bound the user asked for, with one option instead of
+two. `* * * * 1-4` is Monday to Thursday in UTC, in the cron form
+MintMaker uses for its own schedules; Renovate's cron takes `*` for the
+minutes and reads it in UTC unless the `timezone` option names another.
+MintMaker runs every four hours from 00:00 UTC, so the last run inside
+that window is Thursday 20:00 UTC, and a `timezone` line moves the window
+to the team's clock.
 
 Two things stay outside the days. Vulnerability fix PRs ignore the
 schedule by design, so a fix opens and merges on a Friday like any other
-day. And a PR whose checks a person re-runs on a Friday merges on that
-Friday: the schedule holds Renovate, not GitHub.
+day. And a PR a person merges by hand merges whenever they click.
 
 ## Why everything stays in one file, not a shared preset
 

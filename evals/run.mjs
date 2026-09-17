@@ -5,7 +5,7 @@
 // driver copies it to a temp dir, runs `/mintmaker-automerge:setup` through
 // the Agent SDK, and plays the user from the fixture's expect.json: every
 // AskUserQuestion menu is answered with its "(Recommended)" option unless
-// the file says otherwise, and Step 12 picks "Stop here" unless the file
+// the file says otherwise, and Step 13 picks "Stop here" unless the file
 // says "Commit on a branch", so nothing ever leaves the machine. The
 // transcript and the written files are then checked against expect.json.
 //
@@ -75,10 +75,11 @@ const STEP_OF = {
   "Pin actions": 6, "Allow-list": 6,
   "Base images": 7, "Pin base images": 7,
   "Merge days": 8, Pipeline: 8,
-  "Base image workflow": 9, Dependabot: 9,
-  "Write it": 10,
-  Settings: 11,
-  "Ship it": 12,
+  "Merge gate": 9,
+  "Base image workflow": 10, Dependabot: 10,
+  "Write it": 11,
+  Settings: 12,
+  "Ship it": 13,
 };
 // A prescribed menu opens with one of these headers, after its step header has been printed. A follow-up
 // (names to type, per-ecosystem scopes) opens with a header of the model's choosing, which may collide with
@@ -91,9 +92,9 @@ const stepOf = (headers, stepsSeen) => {
 const HEADER_ALIAS = { Workflow: "Base image workflow", "Base workflow": "Base image workflow", "Never merge": "Never automerge", "Pin images": "Pin base images", Branch: "Default branch" };
 // After these answers the reply may legitimately open with something other
 // than the next step header: a Branches answer may bring the how-to, Step 8
-// ends with a closing line, Step 10 goes on with the write phase, a Settings
-// answer may bring an explanation, and Step 12 is the end.
-const NO_HEADER_AFTER_STEP = new Set([2, 8, 10, 12]);
+// ends with a closing line, Step 11 goes on with the write phase, a Settings
+// answer may bring an explanation, and Step 13 is the end.
+const NO_HEADER_AFTER_STEP = new Set([2, 8, 11, 13]);
 const STOP_MESSAGE = "🛑 No `.tekton/` folder with Konflux markers";
 
 const git = (cwd, ...a) =>
@@ -209,11 +210,11 @@ async function runFixture(name) {
       if (m.type === "assistant") {
         for (const b of m.message.content) {
           if (b.type === "text") {
-            for (const m of b.text.matchAll(/### ▶️ Step (\d+)\/12/g)) stepsSeen.add(Number(m[1]));
+            for (const m of b.text.matchAll(/### ▶️ Step (\d+)\/13/g)) stepsSeen.add(Number(m[1]));
             trace.push({ kind: "text", text: b.text });
             const head = b.text.match(/^###.*$/m)?.[0] ?? b.text.split("\n")[0];
             log(`[text] ${head.slice(0, 100)} (${b.text.length} chars)`);
-          } else if (b.type === "tool_use" && b.name === "AskUserQuestion" && !(b.input.questions ?? []).every((q) => q.header && q.options && q.question !== "placeholder")) {
+          } else if (b.type === "tool_use" && b.name === "AskUserQuestion" && !((b.input.questions ?? []).length && (b.input.questions ?? []).every((q) => q.header && q.options && q.question !== "placeholder"))) {
             log(`[malformed menu] ${JSON.stringify(b.input).slice(0, 120)}`); // rejected by the tool before anyone sees it
           } else if (b.type === "tool_use" && b.name === "AskUserQuestion") {
             const headers = b.input.questions.map((q) => HEADER_ALIAS[q.header] ?? q.header);
@@ -249,23 +250,25 @@ async function runFixture(name) {
 
   if (expect.stops) {
     check(menus.length === 0, `a menu was asked on a repo the skill must stop on: ${menus.map((m) => m.headers.join("|")).join(", ")}`);
-    check(allText.includes("### ▶️ Step 1/12"), "Step 1/12 header missing");
+    check(allText.includes("### ▶️ Step 1/13"), "Step 1/13 header missing");
     check(allText.includes(STOP_MESSAGE), "the stop message was not printed");
     check(!trace.some((t) => t.kind === "tool" && (t.name === "Write" || t.name === "Edit")), "a Write or Edit happened on a repo the skill must stop on");
     check(git(repo, "status", "--porcelain") === "", "the working tree was touched");
   } else {
     let pos = -1;
-    for (let n = 1; n <= 12; n++) {
-      const i = allText.indexOf(`### ▶️ Step ${n}/12`, pos + 1);
-      check(i > pos, `Step ${n}/12 header missing or out of order`);
+    for (let n = 1; n <= 13; n++) {
+      const i = allText.indexOf(`### ▶️ Step ${n}/13`, pos + 1);
+      check(i > pos, `Step ${n}/13 header missing or out of order`);
       if (i > pos) pos = i;
     }
     const early = [];
     check(menusMatch(expect.menus, menus, early), `menus differ\n        expected: ${showMenus(expect.menus)}\n        got:      ${showMenus(menus)}`);
-    for (const m of early) check(false, `menu ${m.headers.join("|")} came before the Step ${STEP_OF[m.headers[0]]}/12 screen`);
+    for (const m of early) check(false, `menu ${m.headers.join("|")} came before the Step ${STEP_OF[m.headers[0]]}/13 screen`);
+    let lastStep; // the step of the last prescribed menu: a follow-up belongs to it
     for (let i = 0; i < trace.length; i++) {
       const t = trace[i];
       if (t.kind !== "menu") continue;
+      if (t.step) lastStep = t.step;
       const lbl = t.headers.join("|");
       const before = [];
       for (let j = i - 1; j >= 0 && trace[j].kind !== "menu"; j--) if (trace[j].kind === "text") before.unshift(trace[j].text);
@@ -273,20 +276,20 @@ async function runFixture(name) {
         // a follow-up may come right after its step's menu, with no screen of its own
         check(before.length > 0, `menu ${lbl} came with no text since the previous menu`);
         if (t.step && t.headers[0] !== "Next" && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) { // the Next menu follows the Step 2 how-to, not a screen
-          check(before.some((x) => x.includes(`### ▶️ Step ${t.step}/12`)), `menu ${lbl} came without the Step ${t.step}/12 screen before it`);
+          check(before.some((x) => x.includes(`### ▶️ Step ${t.step}/13`)), `menu ${lbl} came without the Step ${t.step}/13 screen before it`);
         }
       }
       const next = trace.slice(i + 1).find((x) => x.kind !== "tool");
       const nextMenu = trace.slice(i + 1).find((x) => x.kind === "menu");
       const followUpNext = nextMenu?.followUp; // a line introducing a follow-up is not a transition
-      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step) && t.headers[0] !== "Settings") {
-        check(/^### ▶️ Step \d+\/12/.test(next.text.trimStart()), `after the ${lbl} answer the reply does not open with the next step header`);
+      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step ?? lastStep) && t.headers[0] !== "Settings") {
+        check(/^### ▶️ Step \d+\/13/.test(next.text.trimStart()), `after the ${lbl} answer the reply does not open with the next step header`);
       }
     }
     const writeIt = trace.findIndex((t) => t.kind === "menu" && t.headers[0] === "Write it");
     check(writeIt > 0, "the Write it menu never came");
     if (writeIt > 0) {
-      check(trace.slice(0, writeIt).some((t) => t.kind === "text" && t.text.includes("| Ecosystem |")), "the Step 10 summary table was not printed before the Write it menu");
+      check(trace.slice(0, writeIt).some((t) => t.kind === "text" && t.text.includes("| Ecosystem |")), "the Step 11 summary table was not printed before the Write it menu");
       check(!trace.slice(0, writeIt).some((t) => t.kind === "tool" && (t.name === "Write" || t.name === "Edit")), "a Write or Edit happened before the Write it answer");
       check(statusAtWriteIt === "", `the working tree was already dirty at the Write it menu: ${statusAtWriteIt}`);
     }

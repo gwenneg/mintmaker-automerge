@@ -29,6 +29,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Base image workflow",
       "Dependabot"
     ],
@@ -100,13 +103,16 @@
     "ruby/setup-ruby",
     "actions/checkout",
     "\"matchManagers\": [\"dockerfile\"]",
-    "\"tekton\""
+    "\"tekton\"",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": false"
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
     "konflux-ci/mintmaker//config",
     "enabledManagers",
     "composer",
-    "pinDigests"
+    "pinDigests",
+    "\"ignoreTests\": true"
   ]
 }
