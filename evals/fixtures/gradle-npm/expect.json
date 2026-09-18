@@ -31,6 +31,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Write it"
     ],
     [
@@ -83,7 +86,9 @@
     "actions/setup-java",
     "actions/setup-node",
     "\"tekton\"",
-    "\"matchDepTypes\": [\"packageManager\", \"engines\"]"
+    "\"matchDepTypes\": [\"packageManager\", \"engines\"]",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": false"
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
@@ -92,6 +97,7 @@
     "konflux-ci/mintmaker//config",
     "enabledManagers",
     "io.quarkus",
-    "groupName"
+    "groupName",
+    "\"ignoreTests\": true"
   ]
 }

@@ -22,6 +22,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Write it"
     ],
     [
@@ -44,13 +47,16 @@
     "helpers:pinGitHubActionDigests",
     "actions/checkout",
     "actions/setup-python",
-    "\"tekton\""
+    "\"tekton\"",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": false"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "baseBranchPatterns",
     "pinDigests",
     "dockerfile",
-    "enabledManagers"
+    "enabledManagers",
+    "\"ignoreTests\": true"
   ]
 }

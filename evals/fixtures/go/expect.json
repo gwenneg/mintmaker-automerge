@@ -31,6 +31,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Write it"
     ],
     [
@@ -60,7 +63,9 @@
     "\"tekton\"",
     "github.com/spf13/cobra",
     "golang.org/x/sync",
-    "\"matchDepTypes\": [\"toolchain\"]"
+    "\"matchDepTypes\": [\"toolchain\"]",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": false"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -68,7 +73,8 @@
     "helpers:pinGitHubActionDigests",
     "pinDigests",
     "enabledManagers",
-    "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}"
+    "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}",
+    "\"ignoreTests\": true"
   ],
   "answers": {
     "Scope": "Only packages I'll name"

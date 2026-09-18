@@ -38,6 +38,9 @@
       "Pipeline"
     ],
     [
+      "Merge gate"
+    ],
+    [
       "Dependabot"
     ],
     [
@@ -73,7 +76,9 @@
     "\"tekton\"",
     "\"matchUpdateTypes\": [\"major\"]",
     "\"schedule\": [\"* * * * 1-4\"]",
-    "\"matchManagers\": [\"maven-wrapper\"]"
+    "\"matchManagers\": [\"maven-wrapper\"]",
+    "\"platformAutomerge\": false",
+    "\"ignoreTests\": true"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -94,7 +99,8 @@
       ]
     },
     "Merge days": "Monday to Thursday",
-    "Branches": "security-compliance"
+    "Branches": "security-compliance",
+    "Merge gate": "Skip the checks"
   },
   "followups": [
     {
@@ -107,6 +113,7 @@
   "textContains": [
     "Monday to Thursday",
     "Copy login command",
-    "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true"
+    "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true",
+    "whole gate"
   ]
 }

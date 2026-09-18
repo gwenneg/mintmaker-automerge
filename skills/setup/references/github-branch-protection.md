@@ -1,86 +1,106 @@
 # GitHub settings for automerge
 
-The GitHub side of automerge, in the order Step 11 of the skill walks
-through it: the repository setting that lets GitHub do the merging, the
-required checks that gate that merge, and the bypass that lets the Konflux
-app merge without a human approval when the branch requires one.
+The GitHub side of automerge, in the order Step 12 of the skill walks
+through it: why Renovate merges the PR itself instead of GitHub's native
+auto-merge, the required checks that gate that merge, and the bypass that
+lets the Konflux app merge without a human approval when the branch
+requires one.
 
 ## Who can change what
 
-GitHub's docs, per setting: "Allow auto-merge" takes the Maintain role
-("People with maintainer permissions can manage auto-merge"); rulesets
+GitHub's docs, per setting: rulesets
 and branch protection rules take the Admin role ("People with admin
 access to a repository, or a custom role with the 'edit repository rules'
 permission, can create, edit, and delete rulesets"); an organization
 ruleset takes an organization owner. The detect script reports the role of
-the `gh` login on the repository as `github_role`, so Step 11 can say from
+the `gh` login on the repository as `github_role`, so Step 12 can say from
 the start whether the user can do this alone.
 
-## Part 1: "Allow auto-merge", so GitHub does the merging
+## Part 1: Why Renovate merges the PR itself
 
-**Settings → General → Pull Requests → Allow auto-merge**. The detect
-script reports it as `allow_auto_merge` when `gh` is logged in, from the
-REST field of the same name.
+Renovate has two ways to merge a PR. With `platformAutomerge`, on by
+default, it asks GitHub to enable its auto-merge feature on the PR when it
+opens it, and GitHub merges once the branch requirements are met. With
+`platformAutomerge: false` it merges the PR itself, on a later run, with
+`PUT /repos/{owner}/{repo}/pulls/{number}/merge`. The skill writes
+`platformAutomerge: false`, because the native path is broken for the
+case this skill exists for.
 
-Renovate decides per PR: it asks GitHub to auto-merge only a PR whose
-resolved config has `automerge: true`, the code being
-`config.automerge && automergeType in (pr, branch) && platformAutomerge`.
-A major, a Quarkus bump, a wrapper, anything without a rule opens as an
-ordinary PR that nothing arms, and the setting changes nothing for it.
-The rules in the config stay the whole trust decision; the setting only
-changes who carries it out.
+### The bug: GitHub's auto-merge feature and bypass actors
 
-Renovate has two ways to merge a PR, and the setting decides which one
-runs:
+When the approval rule of the base branch is satisfied only by a bypass
+actor, GitHub's auto-merge feature arms on the PR and never completes. The
+PR stays BLOCKED and REVIEW_REQUIRED with every check green, forever. It
+happens on rulesets and on classic branch protection, with a GitHub App
+or a repository role as the actor, in "For pull requests only" and
+"Always allow" modes, and with a merge queue in front. The same PR merges
+instantly when the same app calls the merge endpoint directly, which is
+what Renovate's own merge does.
 
-- With the setting on, Renovate arms GitHub's auto-merge on the PR when
-  it opens it. That is `platformAutomerge`, on by default and untouched by
-  MintMaker's global config. GitHub then merges the PR "automatically
-  after all required reviews and status checks pass", the merge
-  requirements of the base branch, where a required check counts once it
-  is "successful, skipped, or neutral". A check that is not required is
-  not a merge requirement: it can be running or failing, the PR merges.
-- With the setting off, Renovate's GitHub code skips the native path
-  ("GitHub-native automerge: not enabled in repo settings") and, as its
-  docs say, "falls back to Renovate-based automerge". That fallback merges
-  the PR on a later run and only when the branch is green, and the
-  `ignoreTests` docs state what green means: "Currently Renovate's default
-  behavior is to only automerge if every status check has succeeded."
-  The platform code reads every check run and commit status on the head
-  commit and returns red as soon as one check run has conclusion
-  `failure`, required or not.
+Dated reports, all read in full:
 
-So with the setting off, the vulnerability scan Part 2 tells the user not
-to require still blocks every automerge, from the day a new advisory turns
-it red until someone fixes the finding, and two green required checks
-change nothing. The setting is what makes "required checks only" true.
+- 2025-01-19, Shunsuke Suzuki, the earliest: Renovate app on the bypass
+  list of a code-owner ruleset, GitHub's auto-merge feature, never merged.
+  https://zenn.dev/shunsuke_suzuki/scraps/ca7028a7f4fb73
+- 2024-09 and 2024-10, maxbrunet and glasser, with a merge queue: "the
+  bypass list of rule sets works for Renovate itself, it does not work for
+  GitHub's auto-merge/merge-queue".
+  https://github.com/renovatebot/renovate/discussions/31315 and
+  https://github.com/orgs/community/discussions/142206
+- 2025-06-12, discussion "auto-merge doesn't work with rulesets", never
+  answered by GitHub staff.
+  https://github.com/orgs/community/discussions/162623
+- 2026-03-25, discussion 190610, answered by GitHub's product manager for
+  pull requests on 2026-03-26 with "Thanks for reporting. A fix is in the
+  queue." That thread is about a related symptom; the bypass case is
+  raised in its follow-ups, unanswered.
+  https://github.com/orgs/community/discussions/190610
+- 2026-05-09, gh CLI issue 13388, repository role actor, with a maintainer
+  confirming the CLI cannot work around it.
+  https://github.com/cli/cli/issues/13388
+- 2026-07-23, jgsuess: app actor, both modes, two repositories, polled for
+  ten minutes; the direct merge as the same app worked at once.
 
-Two facts to know about the native path:
+No changelog entry, docs note or roadmap item mentions it as of
+2026-09-17. GitHub Support has told users an enhancement request exists.
 
-- GitHub accepts auto-merge only on a PR that "cannot be merged
-  immediately", so the base branch needs a required check or an approval
-  rule. With the checks of Part 2 in place a fresh PR always qualifies:
-  its checks are still pending when Renovate opens it. Without any rule,
-  Renovate falls back to merging the PR itself.
-- Renovate arms auto-merge when it creates the PR and again whenever it
-  pushes to the branch: its docs say it "re-enables the PR for
-  platform-native automerge whenever it's rebased". A PR already open when
-  the config lands is behind the base branch from that merge on, and
-  `rebaseWhen=auto` resolves to `behind-base-branch` on a PR with
-  `automerge=true`, so the next run rebases and arms it.
+### What works instead
 
-Renovate cannot do this on its own. Asked in discussion #23554 to ignore
-non-required checks, a maintainer answered: "platform automerge uses the
-GitHub automerge, which bypasses non required status checks. renovate
-can't know which checks are mandatory. the API is only accessable to
-admins." `ignoreTests` is not a substitute either: it makes Renovate's own
-merge skip every check, and the ruleset is then the only thing between a
-red PR and the branch.
+- The merge endpoint honors bypass actors, on rulesets and on classic
+  branch protection. Renovate uses it when `platformAutomerge` is false:
+  on each run where the branch got no new commit, if the PR is up to date,
+  not conflicted, not modified by someone else and, unless `ignoreTests`
+  is set, every check on its head commit is green, Renovate sends the
+  merge request. GitHub still enforces the required checks itself and
+  answers 405 until they pass; Renovate logs it and retries on the next
+  run. A merge therefore lands on the first MintMaker run after the gate
+  opens, up to four hours later.
+- A second identity approving the PR also lets GitHub's auto-merge feature finish,
+  but an app approval never satisfies a code owner review, and it needs a
+  credential the PR author cannot use. The skill does not use this.
+
+"Allow auto-merge" in the repository settings plays no part once
+`platformAutomerge` is false.
+
+### What `ignoreTests` changes
+
+By default Renovate's own merge waits for every check on the head commit,
+required or not: `ignoreTests` docs, "Currently Renovate's default
+behavior is to only automerge if every status check has succeeded." One
+scanner that goes red on a new advisory then holds every automerge until
+someone fixes the finding. With `ignoreTests: true`, Renovate reads no
+check at all and asks for the merge as soon as the PR is otherwise ready;
+the required checks of the base branch become the whole gate, and with
+none of them a PR merges on red CI. That is why the skill offers it as the
+risky option of Step 9, never as the recommended one, and why Part 2
+matters more when it is chosen.
 
 ## Part 2: Required status checks, the actual gate
 
-GitHub's auto-merge waits for required checks and nothing else, so this
-part decides whether automerge is safe, not just whether it works.
+With `ignoreTests`, GitHub's required checks are the only thing between
+a red PR and the branch; without it they are still what GitHub enforces
+on top of Renovate's own wait. This part decides whether automerge is
+safe, not just whether it works.
 Recommend the strongest gate the repo already has the pieces for:
 
 - **Include**: whatever workflows build and test the actual code, a full
@@ -121,7 +141,9 @@ add the selected workflow job names.
 If the branch's ruleset requires an approval before merging, the Konflux
 app can't merge its own PRs any more than a human could without one. It
 needs to be allowed to bypass that one requirement, and nothing else: it
-should still have to pass the required status checks.
+should still have to pass the required status checks. The merge request
+Renovate sends honors the bypass, on rulesets and on classic branch
+protection; GitHub's auto-merge feature does not, see Part 1.
 
 ### Check org-level rules first
 
@@ -176,7 +198,7 @@ target branch's rules are currently organized:
    the branch directly, which nothing here needs.
 6. Save the ruleset.
 7. The first Konflux-app PR that merges with passing checks and no human
-   approval confirms it; Step 12 of the skill tells the user to watch for
+   approval confirms it; Step 13 of the skill tells the user to watch for
    that. Required status checks still apply to the app.
 
 ### Repos on classic branch protection rules
