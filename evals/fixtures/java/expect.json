@@ -41,13 +41,16 @@
       "Merge gate"
     ],
     [
+      "Gate checks"
+    ],
+    [
+      "Settings"
+    ],
+    [
       "Dependabot"
     ],
     [
       "Write it"
-    ],
-    [
-      "Settings"
     ],
     [
       "Ship it"
@@ -114,6 +117,6 @@
     "Monday to Thursday",
     "Copy login command",
     "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true",
-    "whole gate"
+    "The required checks are now the whole gate"
   ]
 }

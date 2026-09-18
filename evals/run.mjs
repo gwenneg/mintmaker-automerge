@@ -75,10 +75,10 @@ const STEP_OF = {
   "Pin actions": 6, "Allow-list": 6,
   "Base images": 7, "Pin base images": 7,
   "Merge days": 8, Pipeline: 8,
-  "Merge gate": 9,
-  "Base image workflow": 10, Dependabot: 10,
-  "Write it": 11,
-  Settings: 12,
+  "Merge gate": 9, "Gate checks": 9,
+  Settings: 10,
+  "Base image workflow": 11, Dependabot: 11,
+  "Write it": 12,
   "Ship it": 13,
 };
 // A prescribed menu opens with one of these headers, after its step header has been printed. A follow-up
@@ -91,10 +91,11 @@ const stepOf = (headers, stepsSeen) => {
 // Headers the model shortens to fit the tool's 12-character limit.
 const HEADER_ALIAS = { Workflow: "Base image workflow", "Base workflow": "Base image workflow", "Never merge": "Never automerge", "Pin images": "Pin base images", Branch: "Default branch" };
 // After these answers the reply may legitimately open with something other
-// than the next step header: a Branches answer may bring the how-to, Step 8
-// ends with a closing line, Step 11 goes on with the write phase, a Settings
+// than the next step header: a Branches answer may bring the how-to, a Merge gate
+// answer the required-checks guidance, Step 8
+// ends with a closing line, Step 12 goes on with the write phase, a Settings
 // answer may bring an explanation, and Step 13 is the end.
-const NO_HEADER_AFTER_STEP = new Set([2, 8, 11, 13]);
+const NO_HEADER_AFTER_STEP = new Set([2, 8, 9, 12, 13]);
 const STOP_MESSAGE = "🛑 No `.tekton/` folder with Konflux markers";
 
 const git = (cwd, ...a) =>
@@ -155,6 +156,9 @@ function menusMatch(expected, got, early) {
       while (i < got.length && got[i].followUp) { i++; n++; }
       if (n === 0) return false;
     } else {
+      // Step 10 asks nothing when the scan finds no approval rule, which depends on whether the
+      // fixture's fake remote exists on GitHub for the gh login: its menu is optional.
+      if (e.length === 1 && e[0] === "Settings" && (i >= got.length || got[i].headers[0] !== "Settings")) continue;
       if (i >= got.length || [...e].sort().join("+") !== [...got[i].headers].sort().join("+")) return false;
       if (got[i].followUp && got[i].headers[0] in STEP_OF) early.push(got[i]);
       i++;
@@ -275,7 +279,7 @@ async function runFixture(name) {
       if (!t.followUp) {
         // a follow-up may come right after its step's menu, with no screen of its own
         check(before.length > 0, `menu ${lbl} came with no text since the previous menu`);
-        if (t.step && t.headers[0] !== "Next" && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) { // the Next menu follows the Step 2 how-to, not a screen
+        if (t.step && t.headers[0] !== "Next" && t.headers[0] !== "Gate checks" && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) { // the Next and Gate checks menus follow a how-to, not a screen
           check(before.some((x) => x.includes(`### ▶️ Step ${t.step}/13`)), `menu ${lbl} came without the Step ${t.step}/13 screen before it`);
         }
       }
@@ -289,7 +293,7 @@ async function runFixture(name) {
     const writeIt = trace.findIndex((t) => t.kind === "menu" && t.headers[0] === "Write it");
     check(writeIt > 0, "the Write it menu never came");
     if (writeIt > 0) {
-      check(trace.slice(0, writeIt).some((t) => t.kind === "text" && t.text.includes("| Ecosystem |")), "the Step 11 summary table was not printed before the Write it menu");
+      check(trace.slice(0, writeIt).some((t) => t.kind === "text" && t.text.includes("| Ecosystem |")), "the Step 12 summary table was not printed before the Write it menu");
       check(!trace.slice(0, writeIt).some((t) => t.kind === "tool" && (t.name === "Write" || t.name === "Edit")), "a Write or Edit happened before the Write it answer");
       check(statusAtWriteIt === "", `the working tree was already dirty at the Write it menu: ${statusAtWriteIt}`);
     }

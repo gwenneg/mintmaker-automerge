@@ -27,7 +27,7 @@ nothing is committed or pushed, then checks:
 
 | Fixture | Exercises |
 |---|---|
-| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, a second Konflux component on a `security-compliance` branch switched off through the Step 2 how-to, the required checks chosen as the only merge gate in Step 9, Dependabot overlap removed in Step 10 |
+| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, a second Konflux component on a `security-compliance` branch disabled through the Step 2 how-to, the required checks chosen as the only merge gate in Step 9 and its guidance acknowledged, Dependabot overlap removed in Step 11 |
 | `go` | Go modules with indirect deps and a `toolchain` line, digest-pinned base images, SHA-pinned actions, strict `renovate.json` migrated and renamed, MintMaker `extends` and `baseBranchPatterns` dropped, custom rule preserved |
 | `python` | pyproject and requirements with Django, no toolchain or container file (Steps 5 and 7 skipped), path-filtered PR pipeline, existing `renovate.jsonc` kept in place, unknown default branch |
 | `not-konflux` | No `.tekton/`: the skill prints the stop message and asks nothing |
@@ -71,4 +71,4 @@ The model is not deterministic and slips about one walkthrough in six, so
 the fixtures that fail get one rerun before the job goes red. A red job
 after the rerun is worth a transcript read. The check stays optional: it
 is path-filtered, and a required check that never runs blocks a PR
-forever, the very thing the skill warns about in Step 11.
+forever, the very thing the skill warns about in Step 12.

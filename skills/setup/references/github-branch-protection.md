@@ -1,10 +1,10 @@
 # GitHub settings for automerge
 
-The GitHub side of automerge, in the order Step 12 of the skill walks
-through it: why Renovate merges the PR itself instead of GitHub's native
-auto-merge, the required checks that gate that merge, and the bypass that
-lets the Konflux app merge without a human approval when the branch
-requires one.
+The GitHub side of automerge: why Renovate merges the PR itself instead
+of GitHub's native auto-merge and the required checks that gate that
+merge, behind Step 9 of the skill, then the bypass that lets the Konflux
+app merge without a human approval when the branch requires one, behind
+Step 10.
 
 ## Who can change what
 
@@ -13,8 +13,8 @@ and branch protection rules take the Admin role ("People with admin
 access to a repository, or a custom role with the 'edit repository rules'
 permission, can create, edit, and delete rulesets"); an organization
 ruleset takes an organization owner. The detect script reports the role of
-the `gh` login on the repository as `github_role`, so Step 12 can say from
-the start whether the user can do this alone.
+the `gh` login on the repository as `github_role`, so Steps 9 and 10 can
+say from the start whether the user can do this alone.
 
 ## Part 1: Why Renovate merges the PR itself
 
@@ -98,9 +98,10 @@ matters more when it is chosen.
 ## Part 2: Required status checks, the actual gate
 
 With `ignoreTests`, GitHub's required checks are the only thing between
-a red PR and the branch; without it they are still what GitHub enforces
-on top of Renovate's own wait. This part decides whether automerge is
-safe, not just whether it works.
+a red PR and the branch, and this part decides whether automerge is
+safe, not just whether it works. Without it, Renovate waits for every
+check on the PR itself, and the required checks play no part in its
+merge; the skill then shows them for information only.
 Recommend the strongest gate the repo already has the pieces for:
 
 - **Include**: whatever workflows build and test the actual code, a full
