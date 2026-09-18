@@ -29,6 +29,9 @@ else
 fi
 
 say "== Tooling"
+# The plugin version, from the manifest three levels up, for the welcome title.
+manifest="$(cd "$(dirname "$0")/../../.." 2>/dev/null && pwd)/.claude-plugin/plugin.json"
+say "plugin_version: $(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest" 2>/dev/null | head -1)"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then HAVE_GH=yes; else HAVE_GH=no; fi
 say "gh: $HAVE_GH"
 # The oc client, for the Step 2 how-to: installed or not, with its version when it is.
@@ -65,7 +68,7 @@ fi
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
-say "== Branch rules (Step 12: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+say "== Branch rules (Steps 9 and 10: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
@@ -97,25 +100,25 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
-say "== Step 12 status (one verdict per setting, printed verbatim on the Currently lines)"
+say "== Settings status (Step 9 reads status_checks, Step 10 status_bypass; one verdict each, printed verbatim on the Currently lines)"
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
   say "status_bypass: not checked, $why"
 else
   if [ -z "$checks" ]; then say "status_checks: ⚠️ none, nothing gates the merge yet"; else say "status_checks: ✅ $(printf '%s' "$checks" | awk -F', ' '{print NF}') required, compare them with the guidance below"; fi
   if [ "$need_approval" = no ]; then say "status_bypass: ✅ no approval rule on $db, nothing to do"
-  elif [ -z "$ap_bypass" ]; then say "status_bypass: ⚠️ $ap_n approval(s) required by \"$ap_name\" and Red Hat Konflux is not on its bypass list: add it, For pull requests only"
+  elif [ -z "$ap_bypass" ]; then say "status_bypass: ⚠️ The \`$db\` branch of this repository requires $ap_n approval(s) because of the ruleset \"$ap_name\", and Red Hat Konflux is not on its bypass list"
   else
     case "$ap_holds,$ap_bypass" in
-      yes,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode: move the pull request rule to a ruleset of its own and set the bypass to For pull requests only" ;;
-      yes,*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks: move the pull request rule to a ruleset of its own" ;;
-      no,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode: set it to For pull requests only" ;;
+      yes,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode" ;;
+      yes,*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks" ;;
+      no,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode, wider than needed" ;;
       *) say "status_bypass: ✅ Red Hat Konflux bypasses \"$ap_name\", For pull requests only, a ruleset without the required checks: in place" ;;
     esac
   fi
 fi
 
-say "== Links (Step 12: the GitHub pages where the two settings live, built from the remote URL, no gh needed)"
+say "== Links (Steps 9 and 10: the GitHub pages where the settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
@@ -125,8 +128,8 @@ else
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
   case "$otype" in
     User) say "settings_org_rulesets: none (the owner is a user account)" ;;
-    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; not printed in Step 12)" ;;
-    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; not printed in Step 12)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; printed in Step 10)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; printed in Step 10)" ;;
   esac
 fi
 
@@ -201,7 +204,7 @@ bases() {
 }
 BASES=$(bases)
 
-say "== Other updaters (Step 10: Dependabot entries, and workflows that update base images on their own)"
+say "== Other updaters (Step 11: Dependabot entries, and workflows that update base images on their own)"
 # A workflow that mentions base images outside comments and writes changes back (a PR action or a push).
 ou=$(list "$WORKFLOWS" | while read -r wf; do
   grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -352,7 +355,7 @@ list '^\.tekton/.*\.ya?ml$' | while read -r f; do
   [ -n "$pr" ] && say "pr_pipeline_check: Red Hat Konflux / $pr$pf"
 done
 
-say "== Workflow jobs (GitHub check names, for Step 12; matrix jobs appear as 'Name (value)')"
+say "== Workflow jobs (GitHub check names, for Step 9; matrix jobs appear as 'Name (value)')"
 [ "$WORKFLOWS_FOUND" = yes ] || say "workflows: none"
 list "$WORKFLOWS" | while read -r wf; do
   awk -v wf="$wf" '

@@ -148,7 +148,7 @@ are the pipeline itself, so the PR's own Konflux build runs the updated
 pipeline: if the migration breaks the build, the check fails. With the
 recommended gate, Renovate waits for every check, so that red check holds
 the PR; with the required checks as the only gate, it holds the PR only
-when it is required, which is why Step 12 says to require it. The block sets
+when it is required, which is why Step 9 says to require it. The block sets
 `automerge` for the whole manager, so every update type it produces is
 covered, the task replacements MintMaker configures included.
 
@@ -181,7 +181,7 @@ checks of the base branch are the whole gate and a non-required scanner
 that stays red never holds a merge. It is offered as the risky option,
 for repositories where a check can turn red for reasons outside the PR,
 because with no required check a PR then merges on red CI. Which
-checks are required is decided in Step 12, and the PR body says the gate
+checks are required is decided in Step 9, right after the choice, and the PR body says the gate
 is the whole gate when this option was chosen.
 
 ## Why the merge days are a `schedule`, not an `automergeSchedule`
@@ -220,7 +220,7 @@ automerge rules, for three reasons:
   whoever can merge in the shared repo, and changes there reach every
   consumer with no PR in their own repo.
 
-## Why a branch is switched off on its Konflux component, not in the config
+## Why MintMaker is disabled on a branch through its Konflux components, not in the config
 
 Two facts decide this. MintMaker creates one Renovate job per repository
 and branch: it walks the Konflux components, and the first one it meets
@@ -228,7 +228,7 @@ for a branch gets the job, the others are skipped as duplicates (its docs
 say "randomly select one component"; the controller takes the first in
 its list). And Renovate reads the repository config from the default
 branch only, since `useBaseBranchConfig` defaults to `none`. Most users
-expect to switch a branch off in `renovate.jsonc`, so the four ways to
+expect to disable MintMaker on a branch in `renovate.jsonc`, so the four ways to
 try are listed here with what stops each of them.
 
 - **A package rule that disables the branch**, `matchBaseBranches` plus
@@ -255,13 +255,13 @@ try are listed here with what stops each of them.
   for the reason above, the forced alert rules. `ignorePaths: ["**"]` does
   work, since it removes every package file before any rule runs, but on
   a branch that a job or a person refreshes from the default branch, the
-  next refresh brings the default branch's file back, so the switch does
+  next refresh brings the default branch's file back, so that does
   not hold there.
 - **Disabling vulnerability alerts** to make the first route complete
   turns them off for the default branch too, since the setting is
   repository-wide.
 
-The switch MintMaker documents is the annotation
+What MintMaker documents for this is the annotation
 `mintmaker.appstudio.redhat.com/disabled: "true"` on the Konflux
 component, set with `oc annotate`. The controller drops every annotated
 component before it walks the list, and creates a branch's job from any
@@ -270,7 +270,7 @@ the annotation, which the docs say in as many words: "when a repository
 or branch has multiple components, you must annotate each component
 individually". The value must be exactly `true`. Then no job runs on the
 branch, vulnerability fixes included, and nothing in the repository
-changes, which is why the switch survives a branch sync. Two consequences
+changes, which is why it survives a branch sync. Two consequences
 to know: no job means nobody closes the MintMaker PRs already open on the
 branch, and the Konflux UI has no code reading the annotation, so the only
 visible effect is that the component's Dependency updates tab stops
