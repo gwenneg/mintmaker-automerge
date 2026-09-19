@@ -5,7 +5,10 @@ disable-model-invocation: true
 model: sonnet
 allowed-tools:
   - Bash(${CLAUDE_SKILL_DIR}/scripts/detect.sh)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/version.sh)
 ---
+
+!`"${CLAUDE_SKILL_DIR}/scripts/version.sh"`
 
 # Renovate automerge setup
 
@@ -56,7 +59,7 @@ Pick the route, say which in a few words, and never ask the user to install or l
 ## Welcome screen
 
 Print this verbatim on every run, the stop path included, then the Step 1 screen in the same reply, so the first menu the user meets is the one confirming the detected ecosystems.
-`<version>` in the title is the report's `plugin_version`, printed as `v0.6.0`.
+`<version>` in the title is the `plugin_version` line at the top of this file, printed as `v0.6.0`.
 
 ```
 ### 🤖 MintMaker Automerge Setup <version>

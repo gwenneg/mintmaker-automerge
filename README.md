@@ -331,6 +331,7 @@ a short note per step) and carries the config skeleton,
 the per-ecosystem rule blocks, and the validator workflow inline,
 `scripts/detect.sh` gathers the repository facts, its `cand` lines being
 the packages proposed for manual review, each with its reason and link,
+`scripts/version.sh` reads the plugin version for the welcome title,
 and `references/` holds the long-form reasoning and the GitHub steps.
 
 ## License

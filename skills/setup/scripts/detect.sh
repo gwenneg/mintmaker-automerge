@@ -29,9 +29,6 @@ else
 fi
 
 say "== Tooling"
-# The plugin version, from the manifest three levels up, for the welcome title.
-manifest="$(cd "$(dirname "$0")/../../.." 2>/dev/null && pwd)/.claude-plugin/plugin.json"
-say "plugin_version: $(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest" 2>/dev/null | head -1)"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then HAVE_GH=yes; else HAVE_GH=no; fi
 say "gh: $HAVE_GH"
 # The oc client, for the Step 2 how-to: installed or not, with its version when it is.
