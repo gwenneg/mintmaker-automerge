@@ -66,13 +66,13 @@
     "\"matchDepTypes\": [\"toolchain\"]",
     "\"platformAutomerge\": false",
     "\"ignoreTests\": false",
-    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
+    "helpers:pinGitHubActionDigests",
+    "pinDigests"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "baseBranchPatterns",
-    "helpers:pinGitHubActionDigests",
-    "pinDigests",
     "enabledManagers",
     "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}",
     "\"ignoreTests\": true"

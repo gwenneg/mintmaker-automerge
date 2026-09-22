@@ -89,10 +89,10 @@
     "\"matchDepTypes\": [\"packageManager\", \"engines\"]",
     "\"platformAutomerge\": false",
     "\"ignoreTests\": false",
-    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
+    "helpers:pinGitHubActionDigests"
   ],
   "configLacks": [
-    "helpers:pinGitHubActionDigests",
     "example/workflows",
     "gradle/actions",
     "konflux-ci/mintmaker//config",

@@ -91,15 +91,16 @@
     "whitesource/merge-confidence",
     "\"tekton\"",
     "\"platformAutomerge\": false",
-    "\"ignoreTests\": false"
+    "\"ignoreTests\": false",
+    "{\"matchManagers\":[\"dockerfile\"],\"pinDigests\":true}"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "minimumReleaseAge",
     "enabledManagers",
     "\"at any time\"",
-    "\"matchManagers\": [\"dockerfile\"]",
     "github-actions",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "{\"matchManagers\":[\"dockerfile\"],\"matchUpdateTypes\":"
   ]
 }

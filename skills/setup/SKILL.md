@@ -328,7 +328,7 @@ Never fetch an example config from another repository: these blocks are the refe
 ### The skeleton
 
 Header comment, the optional `extends` block for action pinning, the `tekton` block, and a `{{PACKAGE_RULES}}` placeholder.
-Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; the `rangeStrategy` rule of the github-actions block is dropped only in the first case, never because the actions are already pinned. Drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
+Drop the `extends` block only when the user declined pinning, never because every action is already SHA-pinned: it costs nothing then, and an action added later as `@v1` gets its pin PR from it, SHA and full version at once. The `rangeStrategy` rule of the github-actions block follows the same answer. Drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
 The `ignoreTests` line and its comment become the gate block below when Step 9 chose the required checks as the only gate.
 Merge days other than any day add the two lines of the merge-days block below, right after the gate, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
 Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
@@ -395,7 +395,7 @@ Rules apply in order and a later rule overrides an earlier one, so a manual-revi
 Everything MintMaker's global config already sets stays out of the file; if the user asks for a key the blocks don't have, check the global config first, since a duplicate drifts out of sync.
 
 Each ecosystem opens with a separator line that states its decision, the same facts as its row of the Step 12 table: what merges on its own, then what stays manual.
-The github-actions block keeps its `rangeStrategy` rule whenever the block is written, the `extends` block dropped for already pinned actions included: a `# v4` comment next to a SHA needs it as much as a `@v4` ref, since without it that action never gets a patch or minor PR and the allow-list matches nothing. The one case that drops the rule is a "Don't pin" answer: the user chose floating tags, and the rule would rewrite them.
+The github-actions block keeps its `rangeStrategy` rule whenever the block is written, every action already pinned included: a `# v4` comment next to a SHA needs it as much as a `@v4` ref, since without it that action never gets a patch or minor PR and the allow-list matches nothing. The one case that drops the rule, and the `extends` block with it, is a "Don't pin" answer: the user chose floating tags, and the rule would rewrite them.
 That line is the comment of the plain patch-and-minor rule, which carries none of its own.
 A rule that narrows or widens the policy carries one or two lines saying why, and nothing else: no "optional", no "delete if", no restating of the policy.
 
@@ -553,7 +553,7 @@ How the answers map to the blocks:
 - Manual-review packages: the "manual review" block once per candidate kept or package named, after the rule of its manager, with the pattern and comment the report gives for a candidate, under the manager whose files hold it.
   A package the user typed gets the managers whose files hold it and the comment `// Named during setup: stays on manual review whatever the update type.`
   Candidates folded into one menu option still get one rule each; none when the user chose none, and the separator line then names no packages.
-- Base images: drop the `pinDigests` rule when the images are already pinned or the user kept tags only; drop the automerge rule when they kept base images manual, and the separator line then says so.
+- Base images: drop the `pinDigests` rule only when the user kept tags only, never because the images are already pinned, since an image added later on a bare tag gets its pin PR from it; drop the automerge rule when they kept base images manual, and the separator line then says so.
 - Go: drop the indirect rule when the user automerges indirect dependencies; the separator line says whether they are included.
 - npm: copy exactly one of the two scope rules, then the packageManager rule; the allow-list width is the "allow-list width" block with `npm` as the manager.
 - Python: keep only the managers the report detected.
