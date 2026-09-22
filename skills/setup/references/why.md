@@ -106,8 +106,11 @@ points at and Renovate has nothing to open. That is why the skill offers
 `helpers:pinGitHubActionDigests`, which Renovate's docs define as
 `pinDigests: true` for the `action` and `workflow` dep types. The pin PRs
 have the `pinDigest` update type, or `pin` when the ref was a floating
-tag such as `v4`, and stay manual. The version in the comment has to be
-a full one, the next section says why.
+tag such as `v4`, and stay manual. The preset stays in the file when
+every action is already pinned: it finds nothing to do then, and an
+action added later as `@v1` gets its pin PR from it, SHA and full version
+at once, where the pin rule alone would leave it on a movable tag. The
+version in the comment has to be a full one, the next section says why.
 
 Library ecosystems are offered three widths because the tradeoff differs
 per team. Every patch and minor bump relies on the release-age delay as the
@@ -147,18 +150,18 @@ the new SHA, waits for the delay and automerges, while a moved tag is
 still a `digest` update that stays manual.
 
 The skill writes `rangeStrategy: pin` for the `action` depType, next to
-the allow-list rule, whenever the user pins actions or every action is
-already SHA-pinned. Renovate resolves a floating value to the highest
-full version it matches and emits a `pin` update, which the versioning
-turns into the full version. `pin` is not in the automerge rule's update
-types, and Renovate's default `pin` config groups every such update into
-one "Pin dependencies" PR. An action still referenced as `@v6` gets one
-update that pins the SHA and writes the full version at once. Actions
-already on a full version, and reusable workflows, get nothing from the
-rule. Verified by running Renovate 43.268.1 in dry-run on 2026-09-22:
-`v4` with SHA `b96794f` became a pin to `v4.38.1` with the commit of that
-tag, `v7` on `actions/checkout` a pin to `v7.0.1` with the SHA unchanged,
-and a `# master` reusable workflow was untouched. Sources: the
+the allow-list rule, whenever the user did not decline pinning, every
+action already SHA-pinned included. Renovate resolves a floating value
+to the highest full version it matches and emits a `pin` update, which
+the versioning turns into the full version. `pin` is not in the automerge
+rule's update types, and Renovate's default `pin` config groups every
+such update into one "Pin dependencies" PR. An action still referenced
+as `@v6` gets one update that pins the SHA and writes the full version at
+once. Actions already on a full version, and reusable workflows, get
+nothing from the rule. Verified by running Renovate 43.268.1 in dry-run
+on 2026-09-22: `v4` with SHA `b96794f` became a pin to `v4.38.1` with the
+commit of that tag, `v7` on `actions/checkout` a pin to `v7.0.1` with the
+SHA unchanged, and a `# master` reusable workflow was untouched. Sources: the
 `github-actions` versioning readme and `getNewValue`, `lookup/index.ts`
 and `lookup/current.ts` in Renovate, and the lookup test "handles pin for
 github actions".
