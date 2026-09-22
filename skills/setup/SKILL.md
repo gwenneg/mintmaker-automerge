@@ -403,20 +403,20 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
 [
   // --- github-actions: patch and minor of the actions named below; majors, digest-only and every other action stay manual
   {
-    // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
-    // moved tag with no version change, the shape of a hijacked action, never merges alone.
-    "matchManagers": ["github-actions"],
-    "matchUpdateTypes": ["patch", "minor"],
-    "matchDepNames": ["<action-in-use>", "<action-in-use>"],
-    "automerge": true
-  },
-  {
     // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
     // never automerge. Pinning writes the full version once, in a manual PR, and later
     // releases are patch or minor.
     "matchManagers": ["github-actions"],
     "matchDepTypes": ["action"],
     "rangeStrategy": "pin"
+  },
+  {
+    // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
+    // moved tag with no version change, the shape of a hijacked action, never merges alone.
+    "matchManagers": ["github-actions"],
+    "matchUpdateTypes": ["patch", "minor"],
+    "matchDepNames": ["<action-in-use>", "<action-in-use>"],
+    "automerge": true
   },
 
   // --- maven: patch and minor; majors, <the manual-review packages> and the wrapper stay manual
