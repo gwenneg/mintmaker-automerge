@@ -65,7 +65,8 @@
     "golang.org/x/sync",
     "\"matchDepTypes\": [\"toolchain\"]",
     "\"platformAutomerge\": false",
-    "\"ignoreTests\": false"
+    "\"ignoreTests\": false",
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",

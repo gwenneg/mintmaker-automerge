@@ -148,6 +148,14 @@ names in it:
       "matchDepNames": ["actions/checkout", "actions/setup-java"],
       "automerge": true
     },
+    {
+      // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
+      // never automerge. Pinning writes the full version once, in a manual PR, and later
+      // releases are patch or minor.
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["action"],
+      "rangeStrategy": "pin"
+    },
 
     // --- maven: patch and minor; majors, io.quarkus* and the wrapper stay manual
     {
@@ -196,7 +204,7 @@ sets or explains every one of them.
 |---|---|---|
 | Release-age delay | No PR for a fresh release until MintMaker's delay has passed, for the window in which compromised releases are usually caught and pulled | MintMaker's global config, inherited |
 | Update-type filter | `patch` and `minor` qualify by default, plus `digest` for base images. Majors stay manual unless you name the package | The generated rules |
-| Allow-list for GitHub Actions | Each action is vetted by name, and only SHA-pinned actions can automerge safely, since a moved tag then arrives as a PR that never automerges | The generated rules, plus SHA pinning |
+| Allow-list for GitHub Actions | Each action is vetted by name, and only an action pinned to a SHA with a full version in its comment can automerge safely: a release then arrives as a patch or minor PR, and a moved tag as a digest PR that never automerges | The generated rules, plus SHA pinning |
 | Manual-review list | Packages you name stay manual whatever the update type | Your answers |
 | Renovate's own merge | GitHub's auto-merge feature is off, since it never completes behind a bypass actor. Renovate merges on a later MintMaker run, and only when every check on the PR is green, or the required checks alone when you chose `ignoreTests` | The generated config |
 | Required status checks | Only when Renovate skips the checks: they are the whole gate then, and a check that is not required never holds a merge, red or not | You, in the branch ruleset |
@@ -227,12 +235,18 @@ Two exceptions to know:
   human approval confirms the bypass works.
 - The new rules also apply to the PRs MintMaker already has open, so the
   first unattended merges will most likely be those.
+- When you chose to pin actions, an action referenced by a floating tag
+  such as `v4`, in the workflow or in the comment next to its SHA, gets
+  one manual "Pin dependencies" PR that writes its full version. Merge
+  it: until then, that action's releases arrive as digest PRs that never
+  automerge.
 
 ## Troubleshooting
 
 | Symptom | Cause | What to do |
 |---|---|---|
 | `Automerge: Enabled` is missing from a PR that should qualify | The rules did not match the update: wrong package or action name, or an update type outside `patch` and `minor` | Compare the name in the rule with the one in the PR title. The validator does not catch a name that matches nothing. |
+| An allow-listed action only ever gets "Update ... digest" PRs | Its version comment is a floating tag such as `# v4`, so Renovate keeps it and every release is a digest update | Merge the "Pin dependencies" PR, which writes the full version. A config written by an earlier version of the plugin lacks the `rangeStrategy: pin` rule: rerun the setup, or copy the rule from the example above. |
 | A qualifying PR sits open with green required checks | Renovate waits for every check on the PR, and a check that is not required, a vulnerability scan for instance, is red | Fix the finding, or rerun the setup and choose the required checks as the only gate, with care about which checks are required. |
 | A qualifying PR sits open with all checks green | The merge happens on a later MintMaker run, up to 4 hours after the checks passed, or a commit from another author sits on the branch, which Renovate never merges on its own | Wait for the next run. Merge a PR someone else touched by hand. |
 | A PR shows auto-merge enabled by the Konflux app and never merges | `platformAutomerge` is still on in the config, and GitHub's auto-merge feature never completes behind a bypass actor | Rerun the setup, or set `"platformAutomerge": false` in the config. Renovate then merges the PR itself. |

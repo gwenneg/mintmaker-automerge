@@ -88,7 +88,8 @@
     "\"tekton\"",
     "\"matchDepTypes\": [\"packageManager\", \"engines\"]",
     "\"platformAutomerge\": false",
-    "\"ignoreTests\": false"
+    "\"ignoreTests\": false",
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
