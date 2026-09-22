@@ -47,7 +47,8 @@
     "renovate.jsonc": {
       "exists": true,
       "contains": [
-        "https://github.com/gwenneg/mintmaker-automerge"
+        "https://github.com/gwenneg/mintmaker-automerge",
+        "MintMaker Automerge plugin v"
       ]
     },
     "renovate.json": {

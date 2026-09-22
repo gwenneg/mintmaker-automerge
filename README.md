@@ -110,6 +110,7 @@ A `renovate.jsonc` that reads like this, with your ecosystems and your
 names in it:
 
 ```jsonc
+// Set up with the MintMaker Automerge plugin v0.8.0: https://github.com/gwenneg/mintmaker-automerge
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   // Renovate overrides for this repository. MintMaker merges them on top of its
@@ -121,7 +122,6 @@ names in it:
   // Policy: patch and minor updates of the ecosystems below merge on their own once
   // the required checks pass. Majors stay on manual review unless a rule names them.
   // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
-  // Automerge set up with the MintMaker Automerge plugin: https://github.com/gwenneg/mintmaker-automerge
   // Renovate merges each PR itself, on the first run where GitHub allows the merge:
   // GitHub's auto-merge feature never completes when a bypass actor is what satisfies
   // the approval rule, so it stays off.

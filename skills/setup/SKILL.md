@@ -334,8 +334,10 @@ Merge days other than any day add the two lines of the merge-days block below, r
 Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
 The days are a `schedule`, not an `automergeSchedule`: MintMaker sets `updateNotScheduled` to false, so a run outside the days skips an existing branch before any merge attempt, and one option bounds the pushes and the merges alike.
 The comments are part of the file the user keeps: copy them as they are, never add instructions meant for you, and never restate what the header already says.
+The marker is the first line of the file, before the opening brace, which Renovate and the validator accept; `<version>` in it is the `plugin_version` line at the top of this file, printed as in the welcome title. When the existing config already has the marker, on its first line or in its header, replace it there, so the file names the version that last wrote it.
 
 ```jsonc
+// Set up with the MintMaker Automerge plugin <version>: https://github.com/gwenneg/mintmaker-automerge
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   // Renovate overrides for this repository. MintMaker merges them on top of its
@@ -347,7 +349,6 @@ The comments are part of the file the user keeps: copy them as they are, never a
   // Policy: patch and minor updates of the ecosystems below merge on their own once
   // the required checks pass. Majors stay on manual review unless a rule names them.
   // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
-  // Automerge set up with the MintMaker Automerge plugin: https://github.com/gwenneg/mintmaker-automerge
   // Renovate merges each PR itself, on the first run where GitHub allows the merge:
   // GitHub's auto-merge feature never completes when a bypass actor is what satisfies
   // the approval rule, so it stays off.
