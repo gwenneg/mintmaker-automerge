@@ -186,7 +186,7 @@ Otherwise the header, the report's actions table verbatim, the note, then three 
 
 💡 In March 2025 the `tj-actions/changed-files` action was hijacked: every release tag was moved to a malicious commit, so workflows pinned to a tag ran it and workflows pinned to a SHA did not. With a SHA pin, a moved tag becomes a PR that never automerges; with a tag pin, CI runs the new code with no PR at all.
 
-Header "Pin actions", only when the table has an action pinned by tag, a reusable workflow not counting: Pin every action to a SHA (Recommended), Renovate opens one manual PR per action to replace the tag with its SHA and a version comment / Don't pin, the allow-list then guards version bumps only, not moved tags.
+Header "Pin actions", only when the table has an action pinned by tag, a reusable workflow not counting: Pin every action to a SHA (Recommended), Renovate opens one manual Pin dependencies PR replacing each tag with its SHA and the full version as a comment / Don't pin, the allow-list then guards version bumps only, not moved tags, and only for actions referenced by a full version: one on a floating tag such as `v4` keeps following it with no PR.
 
 Header "Allow-list", multiSelect, options built from the table's "Maintained by" column: Actions maintained by GitHub (Recommended), the `actions/*` and `github/*` ones, named in the description / Third-party actions, the rest, named with their owners / I'll type which ones to allow.
 Both groups ticked allows every action; a typed answer replaces the groups.
@@ -328,7 +328,7 @@ Never fetch an example config from another repository: these blocks are the refe
 ### The skeleton
 
 Header comment, the optional `extends` block for action pinning, the `tekton` block, and a `{{PACKAGE_RULES}}` placeholder.
-Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
+Drop the `extends` block when the user declined pinning or every action is already SHA-pinned; the `rangeStrategy` rule of the github-actions block is dropped only in the first case, never because the actions are already pinned. Drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
 The `ignoreTests` line and its comment become the gate block below when Step 9 chose the required checks as the only gate.
 Merge days other than any day add the two lines of the merge-days block below, right after the gate, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
 Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
@@ -395,6 +395,7 @@ Rules apply in order and a later rule overrides an earlier one, so a manual-revi
 Everything MintMaker's global config already sets stays out of the file; if the user asks for a key the blocks don't have, check the global config first, since a duplicate drifts out of sync.
 
 Each ecosystem opens with a separator line that states its decision, the same facts as its row of the Step 12 table: what merges on its own, then what stays manual.
+The github-actions block keeps its `rangeStrategy` rule whenever the block is written, the `extends` block dropped for already pinned actions included: a `# v4` comment next to a SHA needs it as much as a `@v4` ref, since without it that action never gets a patch or minor PR and the allow-list matches nothing. The one case that drops the rule is a "Don't pin" answer: the user chose floating tags, and the rule would rewrite them.
 That line is the comment of the plain patch-and-minor rule, which carries none of its own.
 A rule that narrows or widens the policy carries one or two lines saying why, and nothing else: no "optional", no "delete if", no restating of the policy.
 
@@ -408,6 +409,14 @@ A rule that narrows or widens the policy carries one or two lines saying why, an
     "matchUpdateTypes": ["patch", "minor"],
     "matchDepNames": ["<action-in-use>", "<action-in-use>"],
     "automerge": true
+  },
+  {
+    // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
+    // never automerge. Pinning writes the full version once, in a manual PR, and later
+    // releases are patch or minor.
+    "matchManagers": ["github-actions"],
+    "matchDepTypes": ["action"],
+    "rangeStrategy": "pin"
   },
 
   // --- maven: patch and minor; majors, <the manual-review packages> and the wrapper stay manual

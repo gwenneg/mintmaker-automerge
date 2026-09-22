@@ -81,7 +81,8 @@
     "\"schedule\": [\"* * * * 1-4\"]",
     "\"matchManagers\": [\"maven-wrapper\"]",
     "\"platformAutomerge\": false",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",

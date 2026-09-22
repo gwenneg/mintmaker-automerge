@@ -105,7 +105,9 @@ out of automerge. With `uses: owner/action@v1`, CI runs whatever the tag
 points at and Renovate has nothing to open. That is why the skill offers
 `helpers:pinGitHubActionDigests`, which Renovate's docs define as
 `pinDigests: true` for the `action` and `workflow` dep types. The pin PRs
-have the `pinDigest` update type and stay manual.
+have the `pinDigest` update type, or `pin` when the ref was a floating
+tag such as `v4`, and stay manual. The version in the comment has to be
+a full one, the next section says why.
 
 Library ecosystems are offered three widths because the tradeoff differs
 per team. Every patch and minor bump relies on the release-age delay as the
@@ -120,6 +122,58 @@ For Go, MintMaker's global config enables updates of indirect dependencies
 automerges them too. The same block sets `postUpdateOptions` to
 `gomodTidy` and `gomodUpdateImportPaths`, so every Go PR arrives tidied;
 the repo file restates neither.
+
+## Why the version comment carries a full version
+
+The github-actions manager reads the comment next to a SHA as the version
+and the SHA as the digest. Its versioning, `github-actions`, treats `v4` as
+a floating tag and keeps the shortest tag that exists: its readme says that
+from `v7`, an upgrade to `v7.5.3` stays `v7`. So a `# v4` comment never
+changes, and every release of the action arrives as a `digest` update of
+`v4`, which the patch-and-minor rule never matches. A repository that
+referenced its actions as `@v4` and let `helpers:pinGitHubActionDigests`
+pin them ends up with `# v4` comments on every line, and an allow-list
+that matches nothing. Seen on a Quarkus repository in September 2026:
+every allow-listed action had a floating comment, and the first release
+after the pin, `github/codeql-action` 4.38.1, arrived as a digest PR.
+
+Automerging `digest` updates would not fix it: with a floating comment, a
+normal release and a moved tag are the same digest PR, and Renovate 43.x,
+the line MintMaker ran in September 2026, applies no release-age delay to
+digest updates at all (added upstream on 2026-07-30 in
+renovatebot/renovate#44965, after 43.268.1). The fix is a full version in
+the comment: a release is then a `patch` or `minor` update that carries
+the new SHA, waits for the delay and automerges, while a moved tag is
+still a `digest` update that stays manual.
+
+The skill writes `rangeStrategy: pin` for the `action` depType, next to
+the allow-list rule, whenever the user pins actions or every action is
+already SHA-pinned. Renovate resolves a floating value to the highest
+full version it matches and emits a `pin` update, which the versioning
+turns into the full version. `pin` is not in the automerge rule's update
+types, and Renovate's default `pin` config groups every such update into
+one "Pin dependencies" PR. An action still referenced as `@v6` gets one
+update that pins the SHA and writes the full version at once. Actions
+already on a full version, and reusable workflows, get nothing from the
+rule. Verified by running Renovate 43.268.1 in dry-run on 2026-09-22:
+`v4` with SHA `b96794f` became a pin to `v4.38.1` with the commit of that
+tag, `v7` on `actions/checkout` a pin to `v7.0.1` with the SHA unchanged,
+and a `# master` reusable workflow was untouched. Sources: the
+`github-actions` versioning readme and `getNewValue`, `lookup/index.ts`
+and `lookup/current.ts` in Renovate, and the lookup test "handles pin for
+github actions".
+
+When the user declines pinning, the rule is dropped with the `extends`
+block: they chose floating tags, and the rule would rewrite `@v4` to
+`@v4.2.2`, then open a PR per release for every action, allow-listed or
+not. The "Don't pin" option says what that costs: the allow-list guards
+version bumps only, not moved tags, and only for the actions referenced
+by a full version, since one on a floating tag keeps following it with
+no PR.
+
+The `helpers:pinGitHubActionDigestsToSemver` preset converts the comments
+too, but it swaps the versioning for a regex and types the conversion as
+`minor`, so it would automerge.
 
 ## Why build toolchains get a step of their own
 

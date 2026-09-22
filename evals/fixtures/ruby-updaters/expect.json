@@ -113,6 +113,7 @@
     "enabledManagers",
     "composer",
     "pinDigests",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
   ]
 }
