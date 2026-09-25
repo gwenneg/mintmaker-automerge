@@ -32,6 +32,12 @@
       "Merge gate"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -63,7 +69,8 @@
         "help me understand",
         "I read it"
       ]
-    }
+    },
+    "Rebasing": "only on conflict"
   },
   "files": {
     "renovate.json": {
@@ -95,7 +102,8 @@
   },
   "textContains": [
     "directory missing",
-    "alerts"
+    "alerts",
+    "Rebasing: only on conflict"
   ],
   "configContains": [
     "\"matchManagers\": [\"bundler\"]",
@@ -105,7 +113,10 @@
     "\"matchManagers\": [\"dockerfile\"]",
     "\"tekton\"",
     "\"platformAutomerge\": false",
-    "\"ignoreTests\": false"
+    "\"ignoreTests\": false",
+    "\"groupName\": \"Bundler dependencies\"",
+    "\"rebaseWhen\": \"conflicted\"",
+    "\"keepUpdatedLabel\": \"keep-updated\""
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
@@ -115,5 +126,10 @@
     "pinDigests",
     "\"ignoreTests\": true",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }

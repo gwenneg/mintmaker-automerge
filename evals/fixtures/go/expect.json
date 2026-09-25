@@ -34,6 +34,12 @@
       "Merge gate"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -69,14 +75,18 @@
     "\"ignoreTests\": false",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
     "helpers:pinGitHubActionDigests",
-    "pinDigests"
+    "pinDigests",
+    "\"groupName\": \"Go modules\"",
+    "\"groupName\": \"base images\"",
+    "\"groupName\": null"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
     "baseBranchPatterns",
     "enabledManagers",
     "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "rebaseWhen"
   ],
   "answers": {
     "Scope": "Only packages I'll name"
@@ -91,5 +101,10 @@
   ],
   "textContains": [
     "go1.22.5"
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }

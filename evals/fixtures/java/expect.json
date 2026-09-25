@@ -44,6 +44,12 @@
       "Gate checks"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -83,7 +89,9 @@
     "\"matchManagers\": [\"maven-wrapper\"]",
     "\"platformAutomerge\": false",
     "\"ignoreTests\": true",
-    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
+    "\"groupName\": \"Maven dependencies\"",
+    "\"groupName\": null"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -91,7 +99,8 @@
     "enabledManagers",
     "springframework",
     "\"at any time\"",
-    "automergeSchedule"
+    "automergeSchedule",
+    "rebaseWhen"
   ],
   "answers": {
     "Majors": {
@@ -120,5 +129,10 @@
     "Copy login command",
     "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true",
     "The required checks are now the whole gate"
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }

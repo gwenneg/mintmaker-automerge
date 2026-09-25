@@ -65,7 +65,7 @@ fi
 say "default_branch: ${db:-unknown}"
 say "current_branch: $(git symbolic-ref --short HEAD 2>/dev/null || echo unknown)"
 
-say "== Branch rules (Steps 9 and 10: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
+say "== Branch rules (Steps 9 and 11: the rulesets on the default branch, read with gh; classic branch protection rules are not read)"
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
@@ -97,7 +97,7 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
-say "== Settings status (Step 9 reads status_checks, Step 10 status_bypass; one verdict each, printed verbatim on the Currently lines)"
+say "== Settings status (Step 9 reads status_checks, Step 11 status_bypass; one verdict each, printed verbatim on the Currently lines)"
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
   say "status_bypass: not checked, $why"
@@ -115,7 +115,7 @@ else
   fi
 fi
 
-say "== Links (Steps 9 and 10: the GitHub pages where the settings live, built from the remote URL, no gh needed)"
+say "== Links (Steps 9 and 11: the GitHub pages where the settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
@@ -125,8 +125,8 @@ else
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
   case "$otype" in
     User) say "settings_org_rulesets: none (the owner is a user account)" ;;
-    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; printed in Step 10)" ;;
-    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; printed in Step 10)" ;;
+    Organization) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (organization owners only, a 404 for a repository admin; printed in Step 11)" ;;
+    *) say "settings_org_rulesets: https://github.com/organizations/${slug%%/*}/settings/rules (if the owner is an organization; organization owners only; printed in Step 11)" ;;
   esac
 fi
 
@@ -201,7 +201,7 @@ bases() {
 }
 BASES=$(bases)
 
-say "== Other updaters (Step 11: Dependabot entries, and workflows that update base images on their own)"
+say "== Other updaters (Step 12: Dependabot entries, and workflows that update base images on their own)"
 # A workflow that mentions base images outside comments and writes changes back (a PR action or a push).
 ou=$(list "$WORKFLOWS" | while read -r wf; do
   grep -v -E '^[[:space:]]*#' "$wf" | grep -q -i -E 'base[- _]?image' \
@@ -280,6 +280,8 @@ if [ -n "$found" ]; then
       $0 ~ key("enabledManagers") { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
       $0 ~ key("platformAutomerge") { r("`platformAutomerge`", "⚠️ replaced by false: GitHub'"'"'s auto-merge never completes when a bypass actor meets the approval rule") }
       $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ replaced by the Step 9 gate choice") }
+      $0 ~ key("rebaseWhen") { r("`rebaseWhen`", "⚠️ replaced by the Step 10 rebasing choice") }
+      $0 ~ key("keepUpdatedLabel") { r("`keepUpdatedLabel`", "⚠️ replaced by the Step 10 rebasing choice") }
     ' "$c")
 "
     grep -q -E "$(key packageRules)" "$c" && CFGKEPT="Existing package rules are kept and reviewed with the new ones."
@@ -384,7 +386,7 @@ say "validator_action_main_sha: ${vsha:-unknown (offline? fetch with: git ls-rem
 # table <title> <header row>: a blank line, the section title, the header and its separator.
 table() { say ""; say "== $1"; say "$2"; say "$(printf '%s' "$2" | awk -F'|' '{ s="|"; for (i=2; i<NF; i++) s=s "---|"; print s }')"; }
 say "== Screens (print verbatim in Step 1)"
-say "### ▶️ Step 1/13 Detected ecosystems"
+say "### ▶️ Step 1/14 Detected ecosystems"
 if [ "$konflux" != yes ]; then
   say "🛑 No \`.tekton/\` folder with Konflux markers, so this repo is not onboarded in Konflux and MintMaker does not run on it. This skill stops here: its rules build on MintMaker's global config, which nothing would apply. Onboarding: https://konflux-ci.dev/docs/"
   exit 0

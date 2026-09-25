@@ -252,8 +252,9 @@ days, which is the bound the user asked for, with one option instead of
 two. `* * * * 1-4` is Monday to Thursday in UTC, in the cron form
 MintMaker uses for its own schedules; Renovate's cron takes `*` for the
 minutes and reads it in UTC unless the `timezone` option names another.
-MintMaker runs every four hours from 00:00 UTC, so the last run inside
-that window is Thursday 20:00 UTC, and a `timezone` line moves the window
+MintMaker runs every four hours from 00:00 UTC, twice a day on busy
+clusters, so the last run inside that window is Thursday 20:00 UTC at
+the latest, and a `timezone` line moves the window
 to the team's clock.
 
 Two things stay outside the days. Vulnerability fix PRs ignore the
@@ -349,3 +350,85 @@ the one-run-per-repository-and-branch loop; Renovate's docs for
 `lib/util/package-rules/index.ts` and `lib/config/utils.ts` for the
 forced block.
 
+
+## Why the automerged updates are batched per ecosystem
+
+Renovate merges one PR per run. Its branch loop stops as soon as a branch
+was automerged, because the base branch changed under the list it computed
+at the start of the run (`lib/workers/repository/process/write.ts`, "Stop
+processing other branches because base branch has been changed"), and the
+repository job restarts once, never twice (`lib/workers/repository/index.ts`,
+"Restarting repository job after automerge result"). In the restarted pass
+every other open PR is behind the base branch, and `rebaseWhen: auto`
+resolves to `behind-base-branch` for a branch with automerge on and to
+`conflicted` for the others (`lib/workers/repository/update/branch/reuse.ts`),
+so every automerge PR is force-pushed and its checks rerun, while the PRs on
+manual review stay as they are until they conflict. MintMaker runs a repository every four hours, twice a day on busy
+clusters (the four-hour base schedule is in its docs, the busy-cluster
+cadence comes from the MintMaker operators), so a queue of single PRs drains at one merge per run while every
+merge, and every human push to the base branch, costs a rebuild of every
+open PR. Seen on a Go repository in September 2026: twenty open MintMaker
+PRs, the concurrent limit, fourteen of them green, one merge per run, and
+each of them force-pushed five to fifteen times, against zero to two for
+the major bumps on manual review.
+
+A group PR lands every member in that one merge. The skill groups per
+ecosystem by default, one `groupName` per automerge rule, so a red Go
+build holds the Go group and nothing else. Renovate's noise-reduction docs
+name the cost: a group that "breaks" waits until every member passes, and
+one bad member holds the rest. That member needs a rule of its own,
+`automerge: false` with `groupName: null`, until it builds.
+
+Two mechanics shape the rules. A group automerges only when every member
+does: `lib/workers/repository/updates/generate.ts` sets the branch's
+`automerge` to `upgrades.every((u) => u.automerge)`. So every rule that
+keeps something manual inside a grouped manager, the toolchain and indirect
+rules, the npm `packageManager` rule and the manual-review rules, unsets the
+group with `"groupName": null`, or the group silently stops automerging.
+`null` is Renovate's own idiom: its default `vulnerabilityAlerts` block
+carries `groupName: null`, which is why vulnerability fixes get PRs of their
+own, and MintMaker's config validator accepts it in strict mode (verified
+with renovate-config-validator 43.288.0). Majors are never matched by the
+patch-and-minor rules, so they stay in PRs of their own, and pin updates
+have Renovate's own "Pin dependencies" group.
+
+A member joins the group only once its own release-age delay has passed,
+since `internalChecksFilter: strict` filters per dependency at lookup. When
+a new member joins, the group branch gets a new commit and its checks
+rerun, so the merge waits for the next run.
+
+## Why rebasing on every move is the default, and what rebasing only on conflict costs
+
+Renovate's `rebaseWhen` docs say `conflicted` "is not recommended if you
+have enabled Renovate automerge", for two reasons: two updates merged one
+after another are never tested together, so the base branch can break, and
+a rule that requires branches to be up to date makes automerge impossible
+for a branch that is behind but not conflicted. The automerge concepts page
+adds the design behind the default: after a merge Renovate recomputes the
+state of every remaining branch, wants each one up to date before it
+merges, and merges one per run because merging several in a row "does not
+work reliably". The recommended answer keeps that: every merge is tested
+against the branch it lands on.
+
+The other answer, `rebaseWhen: conflicted`, is offered because it removes
+the rebuild storm and the reset on every human push, and lets the restarted
+pass merge a second green PR. It works on GitHub because Renovate's PR
+automerge checks conflicts, the branch status and whether someone else
+pushed, never whether the branch is behind (`lib/workers/repository/update/pr/automerge.ts`;
+the "cannot merge" reason it also checks is set by the Gitea platform
+only), and GitHub allows a merge of a behind branch unless a rule requires
+branches to be up to date. The cost is the first reason above: a PR merges
+as tested against the base it was opened on, like a human merge without
+"Update branch", and a broken combination shows on the base branch's build
+instead of on the PR. The skill writes the `keepUpdatedLabel` option next
+to it, Renovate's per-PR way back to `behind-base-branch`, and says so in
+the summary and the PR body. MintMaker's `tekton` and `lockFileMaintenance`
+blocks set `rebaseWhen: behind-base-branch` themselves, and a manager block
+wins over the top-level key, so pipeline updates and lockfile refreshes
+keep rebasing whatever the answer.
+
+A merge queue would give both, retesting and throughput, and Renovate
+resolves `rebaseWhen: auto` to `conflicted` behind one for that reason. It
+is out of reach on a branch that requires an approval: the queue never
+admits a PR whose approval is satisfied by a bypass actor, see
+`references/github-branch-protection.md`.

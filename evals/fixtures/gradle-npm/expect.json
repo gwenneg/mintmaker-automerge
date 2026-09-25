@@ -34,6 +34,12 @@
       "Merge gate"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -48,7 +54,8 @@
     "Scope": "Decide per ecosystem",
     "Ship it": "Commit on a branch",
     "Allow-list": "Actions maintained by GitHub",
-    "Toolchains": "Automerge patch and minor"
+    "Toolchains": "Automerge patch and minor",
+    "Batching": "One PR per update"
   },
   "followups": [
     {
@@ -99,6 +106,12 @@
     "enabledManagers",
     "io.quarkus",
     "groupName",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "rebaseWhen"
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }

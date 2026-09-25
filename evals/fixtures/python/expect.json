@@ -25,6 +25,12 @@
       "Merge gate"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -50,7 +56,10 @@
     "\"tekton\"",
     "\"platformAutomerge\": false",
     "\"ignoreTests\": false",
-    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
+    "\"groupName\": \"Python dependencies\"",
+    "\"groupName\": \"GitHub Actions\"",
+    "\"groupName\": null"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -58,6 +67,17 @@
     "pinDigests",
     "dockerfile",
     "enabledManagers",
-    "\"ignoreTests\": true"
+    "\"ignoreTests\": true",
+    "rebaseWhen"
+  ],
+  "answers": {},
+  "defaultBranch": "master",
+  "textContains": [
+    "whenever `master` moves"
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }

@@ -4,7 +4,7 @@ The GitHub side of automerge: why Renovate merges the PR itself instead
 of GitHub's native auto-merge and the required checks that gate that
 merge, behind Step 9 of the skill, then the bypass that lets the Konflux
 app merge without a human approval when the branch requires one, behind
-Step 10.
+Step 11.
 
 ## Who can change what
 
@@ -13,7 +13,7 @@ and branch protection rules take the Admin role ("People with admin
 access to a repository, or a custom role with the 'edit repository rules'
 permission, can create, edit, and delete rulesets"); an organization
 ruleset takes an organization owner. The detect script reports the role of
-the `gh` login on the repository as `github_role`, so Steps 9 and 10 can
+the `gh` login on the repository as `github_role`, so Steps 9 and 11 can
 say from the start whether the user can do this alone.
 
 ## Part 1: Why Renovate merges the PR itself
@@ -37,7 +37,25 @@ or a repository role as the actor, in "For pull requests only" and
 instantly when the same app calls the merge endpoint directly, which is
 what Renovate's own merge does.
 
-Dated reports, all read in full:
+Reproduced on 2026-09-24 on a public test repository, with a private
+GitHub App as the bypass actor, the same actor type as Red Hat Konflux, and
+Renovate 43.268.1 and 44.111.4 run as that app: every negative held twenty
+minutes and paired with a control on the same PR. Rulesets in both bypass
+modes, classic branch protection, a repository admin role and an
+organization admin as the actor: auto-merge never completed, and one human
+approval completed it within seconds each time. The merge endpoint honored
+the bypass every time. With a merge queue, on rulesets and on classic
+protection: auto-merge never queued the PR, `enqueuePullRequest` was
+refused with "At least 1 approving review is required by reviewers with
+write access", Renovate's own merge got 405 "Changes must be made through
+the merge queue", and Renovate 44's enqueue fallback got the same refusal.
+Giving the app a bypass of the queue rule made it merge outside the queue.
+The write-up with every PR linked:
+https://github.com/orgs/community/discussions/208718, repository
+https://github.com/gwenneg-mq-lab/mq-bypass-lab (its README maps the rules
+to each PR).
+
+Earlier reports, all read in full:
 
 - 2025-01-19, Shunsuke Suzuki, the earliest: Renovate app on the bypass
   list of a code-owner ruleset, GitHub's auto-merge feature, never merged.
@@ -74,7 +92,11 @@ No changelog entry, docs note or roadmap item mentions it as of
   merge request. GitHub still enforces the required checks itself and
   answers 405 until they pass; Renovate logs it and retries on the next
   run. A merge therefore lands on the first MintMaker run after the gate
-  opens, up to four hours later.
+  opens, up to four hours later, up to twelve on a busy cluster.
+- A merge queue does not help: entry into the queue is evaluated like
+  auto-merge, so a bypass actor's PR never gets in, whoever tries to add it,
+  and a bypass of the queue rule itself makes the merge skip the queue. See
+  the reproduction above.
 - A second identity approving the PR also lets GitHub's auto-merge feature finish,
   but an app approval never satisfies a code owner review, and it needs a
   credential the PR author cannot use. The skill does not use this.
@@ -199,7 +221,7 @@ target branch's rules are currently organized:
    the branch directly, which nothing here needs.
 6. Save the ruleset.
 7. The first Konflux-app PR that merges with passing checks and no human
-   approval confirms it; Step 13 of the skill tells the user to watch for
+   approval confirms it; Step 14 of the skill tells the user to watch for
    that. Required status checks still apply to the app.
 
 ### Repos on classic branch protection rules
