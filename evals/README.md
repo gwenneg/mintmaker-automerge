@@ -11,10 +11,10 @@ same detect script; only the person is replaced.
 Each directory under `fixtures/` is a small Konflux-onboarded repository
 with an `expect.json` next to it. The driver copies the fixture to a temp
 directory, commits it, runs `/mintmaker-automerge:setup` there, picks the
-`(Recommended)` option of every menu, answers `Stop here` at Step 13 so
+`(Recommended)` option of every menu, answers `Stop here` at Step 14 so
 nothing is committed or pushed, then checks:
 
-- the welcome screen comes first, the thirteen step headers come in order, and
+- the welcome screen comes first, the fourteen step headers come in order, and
   every menu is preceded by the screen of its step, with no transition line
   after an answer;
 - the menus come in the expected sequence, with the expected questions
@@ -27,13 +27,13 @@ nothing is committed or pushed, then checks:
 
 | Fixture | Exercises |
 |---|---|
-| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, a second Konflux component on a `security-compliance` branch disabled through the Step 2 how-to, the required checks chosen as the only merge gate in Step 9 and its guidance acknowledged, Dependabot overlap removed in Step 11 |
+| `java` | Maven with Quarkus (manual-review candidate), Maven wrapper, tag-only base images, tag-pinned actions, no Renovate config, a second Konflux component on a `security-compliance` branch disabled through the Step 2 how-to, the required checks chosen as the only merge gate in Step 9 and its guidance acknowledged, Dependabot overlap removed in Step 12 |
 | `go` | Go modules with indirect deps and a `toolchain` line, digest-pinned base images, SHA-pinned actions, strict `renovate.json` migrated and renamed, MintMaker `extends` and `baseBranchPatterns` dropped, custom rule preserved |
-| `python` | pyproject and requirements with Django, no toolchain or container file (Steps 5 and 7 skipped), path-filtered PR pipeline, existing `renovate.jsonc` kept in place, unknown default branch |
+| `python` | pyproject and requirements with Django, no toolchain or container file (Steps 5 and 7 skipped), path-filtered PR pipeline, existing `renovate.jsonc` kept in place, unknown default branch, committed on `master` so the branch placeholders print `master` |
 | `not-konflux` | No `.tekton/`: the skill prints the stop message and asks nothing |
-| `gradle-npm` | Gradle with Spring Boot and a wrapper, npm with Angular, a `latest` base image, a reusable workflow and a bare-SHA action, a validator workflow already present, config placed under `.github/`, scope decided per ecosystem through follow-up menus, a `packageManager` pin, toolchain automerge opted in, "Commit on a branch" at Step 13 |
-| `rust-preset` | Cargo, no GitHub workflows (Step 6 skipped), `.github/renovate.json5` with a shared preset fetched from GitHub, `minimumReleaseAge` and `enabledManagers` removed, typed answers naming a never-automerge package and packages whose majors may merge with their reason, base images kept manual with their digest pin rule kept, Saturday batch kept |
-| `ruby-updaters` | Bundler and Terraform, `renovate.json` kept strict on request, actions left unpinned with the full allow-list, a base-image bump workflow removed, Dependabot narrowed with a stale entry flagged, "help me understand" on the GitHub settings question answered once |
+| `gradle-npm` | Gradle with Spring Boot and a wrapper, npm with Angular, a `latest` base image, a reusable workflow and a bare-SHA action, a validator workflow already present, config placed under `.github/`, scope decided per ecosystem through follow-up menus, a `packageManager` pin, toolchain automerge opted in, one PR per update at Step 10, "Commit on a branch" at Step 14 |
+| `rust-preset` | Cargo, no GitHub workflows (Step 6 skipped), `.github/renovate.json5` with a shared preset fetched from GitHub, `minimumReleaseAge` and `enabledManagers` removed, typed answers naming a never-automerge package and packages whose majors may merge with their reason, base images kept manual with their digest pin rule kept, Saturday batch kept, one PR for all ecosystems at Step 10 |
+| `ruby-updaters` | Bundler and Terraform, `renovate.json` kept strict on request, actions left unpinned with the full allow-list, a base-image bump workflow removed, Dependabot narrowed with a stale entry flagged, "help me understand" on the GitHub settings question answered once, rebase only on conflict at Step 10 |
 
 The answers each fixture gives, and the checks on the result, are in its
 `expect.json`; the format is documented at the top of `run.mjs`.
@@ -71,4 +71,4 @@ The model is not deterministic and slips about one walkthrough in six, so
 the fixtures that fail get one rerun before the job goes red. A red job
 after the rerun is worth a transcript read. The check stays optional: it
 is path-filtered, and a required check that never runs blocks a PR
-forever, the very thing the skill warns about in Step 12.
+forever, the very thing the skill warns about in Step 13.

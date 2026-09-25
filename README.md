@@ -30,7 +30,7 @@ installing and using it.
 ![What a run looks like](docs/what-a-run-looks-like.png)
 
 A read-only script scans the repository for its ecosystems, base images,
-GitHub Actions, branches and existing Renovate config. Then thirteen short
+GitHub Actions, branches and existing Renovate config. Then fourteen short
 steps ask a few questions each, with a recommended answer and a note on
 what the choice changes in Renovate, GitHub or Konflux. Ask `why` during
 the run to get a longer explanation.
@@ -82,7 +82,7 @@ request turns automerge on.
 > /reload-plugins
 > ```
 
-## The thirteen steps
+## The fourteen steps
 
 Every decision is a menu. All of them come with a recommended option,
 except the branch question of Step 2, which is yours alone. A step that
@@ -99,10 +99,11 @@ does not apply to the repository is skipped with one line.
 | 7. Base images | Whether digest, patch and minor bumps of the `FROM` images automerge, and whether to pin them to digests | Yes to both |
 | 8. Merge days | On which days PRs may open and merge, and whether Konflux pipeline updates follow those days or MintMaker's Saturday batch | Any day, pipeline updates on the same days |
 | 9. Merge gate | Whether Renovate merges only when every check on the PR passes, or skips the checks and leaves the gate to the required checks of the base branch | Keep the checks |
-| 10. Konflux app bypass | The one GitHub setting every setup needs when the branch requires an approval: where to add the Konflux app as a bypass actor, and what the repository has today when `gh` is logged in | Read it, apply it yourself. Skipped when already in place |
-| 11. Other updaters | What happens to `dependabot.yml` and to a home-grown base-image workflow once Renovate covers the same ecosystem | Remove or narrow what overlaps |
-| 12. Summary | One table with the whole trust decision, then whether to write the files to your working tree | Write the files, nothing committed yet |
-| 13. Pull request | Whether to branch, commit, push and open the PR | Open the PR |
+| 10. Automerge throughput | How many PRs the automerged updates share, and whether an open PR is rebased whenever the base branch moves or only on conflict, after an explanation of why Renovate merges one PR per MintMaker run | One PR per ecosystem, rebase on every move |
+| 11. Konflux app bypass | The one GitHub setting every setup needs when the branch requires an approval: where to add the Konflux app as a bypass actor, and what the repository has today when `gh` is logged in | Read it, apply it yourself. Skipped when already in place |
+| 12. Other updaters | What happens to `dependabot.yml` and to a home-grown base-image workflow once Renovate covers the same ecosystem | Remove or narrow what overlaps |
+| 13. Summary | One table with the whole trust decision, then whether to write the files to your working tree | Write the files, nothing committed yet |
+| 14. Pull request | Whether to branch, commit, push and open the PR | Open the PR |
 
 ## What you get
 
@@ -139,14 +140,15 @@ names in it:
     "schedule": ["at any time"]
   },
   "packageRules": [
-    // --- github-actions: patch and minor of the actions named below; majors, digest-only and every other action stay manual
+    // --- github-actions: patch and minor of the actions named below, in one PR; majors, digest-only and every other action stay manual
     {
       // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
       // moved tag with no version change, the shape of a hijacked action, never merges alone.
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["patch", "minor"],
       "matchDepNames": ["actions/checkout", "actions/setup-java"],
-      "automerge": true
+      "automerge": true,
+      "groupName": "GitHub Actions"
     },
     {
       // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
@@ -157,11 +159,12 @@ names in it:
       "rangeStrategy": "pin"
     },
 
-    // --- maven: patch and minor; majors, io.quarkus* and the wrapper stay manual
+    // --- maven: patch and minor, in one PR; majors, io.quarkus* and the wrapper stay manual
     {
       "matchManagers": ["maven"],
       "matchUpdateTypes": ["patch", "minor"],
-      "automerge": true
+      "automerge": true,
+      "groupName": "Maven dependencies"
     },
     {
       // The wrapper is every developer's build tool, not just CI's.
@@ -170,9 +173,11 @@ names in it:
     },
     {
       // Quarkus follows an LTS track, so a reviewer picks the target version. https://quarkus.io/releases/
+      // Its own PR: a member that never automerges would hold the group.
       "matchManagers": ["maven"],
       "matchPackageNames": ["io.quarkus*"],
-      "automerge": false
+      "automerge": false,
+      "groupName": null
     }
   ]
 }
@@ -223,7 +228,7 @@ Two exceptions to know:
 
 ## Once it is live
 
-- MintMaker runs every 4 hours. A PR opens on one run, and Renovate merges
+- MintMaker runs every 4 hours, twice a day on busy clusters. A PR opens on one run, and Renovate merges
   it on a later one, the first where GitHub allows the merge: hours after
   the checks went green, not minutes.
 - A fresh release shows up once the release-age delay has passed, with a
@@ -248,8 +253,10 @@ Two exceptions to know:
 | `Automerge: Enabled` is missing from a PR that should qualify | The rules did not match the update: wrong package or action name, or an update type outside `patch` and `minor` | Compare the name in the rule with the one in the PR title. The validator does not catch a name that matches nothing. |
 | An allow-listed action only ever gets "Update ... digest" PRs | Its version comment is a floating tag such as `# v4`, so Renovate keeps it and every release is a digest update | Merge the "Pin dependencies" PR, which writes the full version. A config written by an earlier version of the plugin lacks the `rangeStrategy: pin` rule: rerun the setup, or copy the rule from the example above. |
 | A qualifying PR sits open with green required checks | Renovate waits for every check on the PR, and a check that is not required, a vulnerability scan for instance, is red | Fix the finding, or rerun the setup and choose the required checks as the only gate, with care about which checks are required. |
-| A qualifying PR sits open with all checks green | The merge happens on a later MintMaker run, up to 4 hours after the checks passed, or a commit from another author sits on the branch, which Renovate never merges on its own | Wait for the next run. Merge a PR someone else touched by hand. |
+| A qualifying PR sits open with all checks green | The merge happens on a later MintMaker run, up to 4 hours after the checks passed, up to 12 on a busy cluster, or a commit from another author sits on the branch, which Renovate never merges on its own | Wait for the next run. Merge a PR someone else touched by hand. |
 | A PR shows auto-merge enabled by the Konflux app and never merges | `platformAutomerge` is still on in the config, and GitHub's auto-merge feature never completes behind a bypass actor | Rerun the setup, or set `"platformAutomerge": false` in the config. Renovate then merges the PR itself. |
+| A group PR stays red | One member of the group breaks the build or its lockfile update, and a group automerges only when every member is green | Give that package a rule of its own, `automerge: false` with `groupName: null`, until it builds. |
+| The base branch broke after two PRs merged in a row | The config rebases only on conflict, so each PR was tested against the base it was opened on, not against the other PR | Revert, then rerun the setup and keep the recommended rebasing, or add the `keep-updated` label to the PRs that must follow the base branch. |
 | A PR merged with no approval | That is the bypass working as designed | Check that the bypass is scoped to the approval rule and set to "For pull requests only". |
 | Human PRs are stuck on a pending required check | A required check that does not run on every PR, such as the config validator workflow or `renovate/stability-days` | Remove it from the required checks. Only require checks that run on every PR. |
 | The validator workflow fails on the PR | A syntax or schema error in the config | Fix the file and push again. The workflow log names the line. |
@@ -263,7 +270,9 @@ obvious from the config:
 
 - [Why Renovate merges the PR itself](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#own-merge)
   instead of GitHub's auto-merge feature, a GitHub bug with no fix as of
-  September 2026.
+  September 2026, reproduced on a
+  [public test repository](https://github.com/orgs/community/discussions/208718)
+  that also shows why a merge queue is no way around it.
 - [Why actions get pinned to a SHA, and images to a digest](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#pinning).
 - [Why the Renovate config is not a shared preset](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#why-the-renovate-config-is-not-a-shared-preset):
   one self-contained file per repository, so the decision stays with the

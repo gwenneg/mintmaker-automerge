@@ -3,7 +3,7 @@ kind: PipelineRun
 metadata:
   name: python-demo-on-pull-request
   annotations:
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main" && files.all.exists(x, x.matches('^(src|pyproject.toml|requirements.txt)'))
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "master" && files.all.exists(x, x.matches('^(src|pyproject.toml|requirements.txt)'))
     build.appstudio.openshift.io/repo: https://github.com/example/python-demo?rev={{revision}}
   labels:
     appstudio.openshift.io/application: python-demo

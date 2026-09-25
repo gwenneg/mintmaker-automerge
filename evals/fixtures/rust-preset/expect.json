@@ -23,6 +23,12 @@
       "Merge gate"
     ],
     [
+      "Batching"
+    ],
+    [
+      "Rebasing"
+    ],
+    [
       "Settings"
     ],
     [
@@ -50,7 +56,8 @@
       ]
     },
     "Base images": "Keep them manual",
-    "Pipeline": "Saturday"
+    "Pipeline": "Saturday",
+    "Batching": "all ecosystems"
   },
   "followups": [
     {
@@ -92,7 +99,9 @@
     "\"tekton\"",
     "\"platformAutomerge\": false",
     "\"ignoreTests\": false",
-    "{\"matchManagers\":[\"dockerfile\"],\"pinDigests\":true}"
+    "{\"matchManagers\":[\"dockerfile\"],\"pinDigests\":true}",
+    "\"groupName\": \"all non-major dependencies\"",
+    "\"groupName\": null"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -101,6 +110,13 @@
     "\"at any time\"",
     "github-actions",
     "\"ignoreTests\": true",
-    "{\"matchManagers\":[\"dockerfile\"],\"matchUpdateTypes\":"
+    "{\"matchManagers\":[\"dockerfile\"],\"matchUpdateTypes\":",
+    "rebaseWhen",
+    "\"groupName\": \"Cargo dependencies\""
+  ],
+  "textLacks": [
+    "the reply opens with",
+    "printed verbatim",
+    "opens with this tip"
   ]
 }
