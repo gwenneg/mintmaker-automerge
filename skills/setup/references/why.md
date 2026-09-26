@@ -252,7 +252,7 @@ days, which is the bound the user asked for, with one option instead of
 two. `* * * * 1-4` is Monday to Thursday in UTC, in the cron form
 MintMaker uses for its own schedules; Renovate's cron takes `*` for the
 minutes and reads it in UTC unless the `timezone` option names another.
-MintMaker runs every four hours from 00:00 UTC, twice a day on busy
+MintMaker runs every four hours from 00:00 UTC, twice a day on busy Konflux
 clusters, so the last run inside that window is Thursday 20:00 UTC at
 the latest, and a `timezone` line moves the window
 to the team's clock.
@@ -363,7 +363,7 @@ every other open PR is behind the base branch, and `rebaseWhen: auto`
 resolves to `behind-base-branch` for a branch with automerge on and to
 `conflicted` for the others (`lib/workers/repository/update/branch/reuse.ts`),
 so every automerge PR is force-pushed and its checks rerun, while the PRs on
-manual review stay as they are until they conflict. MintMaker runs a repository every four hours, twice a day on busy
+manual review stay as they are until they conflict. MintMaker runs a repository every four hours, twice a day on busy Konflux
 clusters (the four-hour base schedule is in its docs, the busy-cluster
 cadence comes from the MintMaker operators), so a queue of single PRs drains at one merge per run while every
 merge, and every human push to the base branch, costs a rebuild of every

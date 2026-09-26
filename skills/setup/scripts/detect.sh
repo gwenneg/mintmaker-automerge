@@ -97,20 +97,21 @@ else
   say "konflux_bypasses_required_checks: $both"
 fi
 
+SB=""
 say "== Settings status (Step 9 reads status_checks, Step 11 status_bypass; one verdict each, printed verbatim on the Currently lines)"
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
-  say "status_bypass: not checked, $why"
+  SB="not checked, $why"; say "status_bypass: $SB"
 else
   if [ -z "$checks" ]; then say "status_checks: ⚠️ none, nothing gates the merge yet"; else say "status_checks: ✅ $(printf '%s' "$checks" | awk -F', ' '{print NF}') required, compare them with the guidance below"; fi
-  if [ "$need_approval" = no ]; then say "status_bypass: ✅ no approval rule on $db, nothing to do"
-  elif [ -z "$ap_bypass" ]; then say "status_bypass: ⚠️ The \`$db\` branch of this repository requires $ap_n approval(s) because of the ruleset \"$ap_name\", and Red Hat Konflux is not on its bypass list"
+  if [ "$need_approval" = no ]; then SB="✅ no approval rule on $db, nothing to do"; say "status_bypass: $SB"
+  elif [ -z "$ap_bypass" ]; then SB="⚠️ The \`$db\` branch of this repository requires $ap_n approval(s) because of the ruleset \"$ap_name\", and Red Hat Konflux is not on its bypass list"; say "status_bypass: $SB"
   else
     case "$ap_holds,$ap_bypass" in
-      yes,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode" ;;
-      yes,*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks" ;;
-      no,*always*) say "status_bypass: ⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode, wider than needed" ;;
-      *) say "status_bypass: ✅ Red Hat Konflux bypasses \"$ap_name\", For pull requests only, a ruleset without the required checks: in place" ;;
+      yes,*always*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode"; say "status_bypass: $SB" ;;
+      yes,*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks"; say "status_bypass: $SB" ;;
+      no,*always*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode, wider than needed"; say "status_bypass: $SB" ;;
+      *) SB="✅ Red Hat Konflux bypasses \"$ap_name\", For pull requests only, a ruleset without the required checks: in place"; say "status_bypass: $SB" ;;
     esac
   fi
 fi
@@ -475,6 +476,16 @@ if [ -n "$found" ]; then
   [ -n "$CFGKEPT" ] && say "$CFGKEPT"
 fi
 say ""
+say ""
+say "== Skipped steps (each block is the first lines of the reply that reaches the step: print it verbatim, then the next step's screen)"
+n_sk=0
+if [ "$nbr" -le 1 ]; then skb=$(printf '%s\n' "$BRLINES" | awk '{print $2; exit}'); say "### ▶️ Step 2/14 Branches MintMaker updates"; say "Skipped: MintMaker runs on one branch, \`${skb:-$db}\`."; say ""; n_sk=$((n_sk+1)); fi
+if [ -z "$TC" ]; then say "### ▶️ Step 5/14 Build toolchains"; say "Skipped: no build toolchain pinned in this repo."; say ""; n_sk=$((n_sk+1)); fi
+if [ "$WORKFLOWS_FOUND" != yes ]; then say "### ▶️ Step 6/14 GitHub Actions"; say "Skipped: no GitHub workflows in this repo."; say ""; n_sk=$((n_sk+1)); fi
+if [ -z "$BASES" ]; then say "### ▶️ Step 7/14 Base images"; say "Skipped: no container file in this repo."; say ""; n_sk=$((n_sk+1)); fi
+case "$SB" in ✅*) say "### ▶️ Step 11/14 Konflux app bypass"; say "Skipped: ${SB#✅ }."; say ""; n_sk=$((n_sk+1)) ;; esac
+if [ ! -f .github/dependabot.yml ] && [ -z "$ou" ]; then say "### ▶️ Step 12/14 Other updaters"; say "Skipped: no other updater in this repo."; say ""; n_sk=$((n_sk+1)); fi
+[ "$n_sk" -gt 0 ] || say "(none: every step has something to ask)"
 say "== Manual-review candidates (the first Never-automerge option of Step 4; one manual-review rule each, under the manager whose files hold the package)"
 if [ -n "$CANDS" ]; then printf '%s' "$CANDS"; else say "(none)"; fi
 exit 0
