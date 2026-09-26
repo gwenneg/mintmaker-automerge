@@ -104,7 +104,7 @@ When the report's `oc:` line says yes, the install line of the how-to is left ou
 Header "Branches", question "Should MintMaker stop opening PRs on one of these branches?", no option marked recommended: `No, keep MintMaker on every branch`, the rules chosen next apply to all of them / one option per branch other than the default, `Show me how to disable MintMaker on <branch>`, the steps printed next, once per component of the branch, nothing applied by this skill.
 More than three such branches: one option `Show me how to disable MintMaker on a branch I'll name`, the branch typed as the answer.
 On "No", the reply opens with the Step 3 header.
-On a branch, the reply opens with the how-to below for that branch, its placeholders filled from the report's `branch:` line, and ends with one more question, header "Next", question "Ready to move on to the Renovate config?": `Yes, go to the next step (Recommended)` / `I need more help with this step`. On the second, explain from `references/why.md` in a few lines, answer what the user asks, then ask again; on the first, the reply opens with the Step 3 header. The how-to and the rebasing tip of Step 10 are the two places a reply to an answer does not open with a step header, and Steps 2 and 10 the two steps with a second question of their own.
+On a branch, the reply opens with the how-to below for that branch, its placeholders filled from the report's `branch:` line, and ends with one more question, header "Next", question "Ready to move on to the Renovate config?": `Yes, go to the next step (Recommended)` / `I need more help with this step`. On the second, explain from `references/why.md` in a few lines, answer what the user asks, then ask again; on the first, the reply opens with the Step 3 header. The how-to, the required-checks guidance of Step 9 and the rebasing tip of Step 10 are the places a reply to an answer does not open with a step header, and Steps 2, 9 and 10 the steps with a second question of their own.
 The how-to shows one component, the first of the report's `components=` list, under a line saying the steps are done for each component, since MintMaker's docs say a branch with several components needs each one annotated.
 A `namespace` or a component the report gives as `unknown` stays a placeholder, with one line saying the Konflux UI shows both on the component's page.
 
@@ -282,6 +282,7 @@ On the Batching answer, the reply opens with the tip below, verbatim, and ends w
 💡 By default, Renovate rebases every open automerge PR whenever `<default_branch>` moves and reruns its checks, so every merge is tested against the branch it lands on. Manual-review PRs are rebased only on conflict, unless your branch rules require branches to be up to date. Rebasing only on conflict removes those rebuilds and lets two PRs merge per run, but each PR merges as tested against a base that has moved since, which Renovate's documentation advises against. It is what a manual merge does today, unless your branch rules require branches to be up to date, and then a PR that is behind cannot merge at all.
 
 Header "Rebasing", question "What happens to an open PR when `<default_branch>` moves?": `Rebase it and rerun the checks (Recommended)`, every merge is tested against the branch it lands on: after each merge every other open automerge PR is rebased and its checks rerun, and Renovate merges one PR per run / `Rebase only on conflict`, described as: Risky. A PR merges as tested against the base it was opened on, like a human merge without "Update branch": two bumps merged in a row are never tested together, and a broken combination shows on the `<default_branch>` build, not on the PR. No rebase storm after a merge, and two merges per run instead of one.
+When the report's `up_to_date_required` line says yes, the second option is not a choice: its label reads `Rebase only on conflict (not available here)` and its description says the branch rules require a PR to be up to date before merging, so a PR that is behind but not in conflict could never merge. An answer that picks it is treated as the first, and the reply says so in one line before the Step 11 header.
 Neither answer has a follow-up beyond that: the reply to the Rebasing answer opens with the Step 11 screen, the Konflux app bypass, or its Skipped line and the Step 12 screen. The recommended rebasing option writes nothing, since Renovate rebases a branch that is behind by default; the other writes the rebase block of the skeleton, and the summary of Step 13 and the PR body carry its warning.
 
 ## Step 11: Konflux app bypass
@@ -500,7 +501,8 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "Go modules"
   },
   {
-    // Indirect dependencies stay on manual review, in PRs of their own: a manual member would hold the group.
+    // Indirect dependencies stay on manual review.
+    // Its own PR: a member that never automerges would hold the group.
     "matchManagers": ["gomod"],
     "matchDepTypes": ["indirect"],
     "automerge": false,
@@ -597,7 +599,7 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
 How the answers map to the blocks:
 
 - Toolchains: the wrapper rules, the gomod toolchain rule and the npm packageManager rule are the toolchain rules; they stay as written when the user kept them manual or the step was skipped, and they stand whatever the scope of their manager, an allow-list included, since the file says what was decided.
-  When the user opted in, each toolchain rule of a manager the report found becomes `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with `// CI builds with the new toolchain on every PR.` in place of both its comment lines, `"groupName": null` kept since an opted-in toolchain still gets a PR of its own, and the separator lines say the toolchain merges.
+  When the user opted in, each toolchain rule of a manager the report found becomes `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with `// CI builds with the new toolchain on every PR.` in place of its comment lines, one or two, and `"groupName": null` kept where the rule has it, since an opted-in toolchain still gets a PR of its own; the separator lines say the toolchain merges.
   Its `matchDepTypes` list stays as written: `engines` stays next to `packageManager` even when the report lists no engines pin, since the rule describes the policy, not the repo's current files.
 - Manual-review packages: the "manual review" block once per candidate kept or package named, after the rule of its manager, with the pattern and comment the report gives for a candidate, under the manager whose files hold it.
   A package the user typed gets the managers whose files hold it and the comment `// Named during setup: stays on manual review whatever the update type.`
@@ -612,6 +614,7 @@ How the answers map to the blocks:
   For one PR for all ecosystems, every `groupName` value becomes `all non-major dependencies`, the `null` ones staying `null`.
   For one PR per update, drop every `groupName` line, the `null` ones with the comment line above them included.
   The manual-review rule of a package the user typed unsets the group the same way as a candidate's.
+  A kept custom rule that sets its own `groupName` goes after the ecosystem rule of its manager, so its group stays, automerges like the rest of the ecosystem when its updates match the ecosystem rule, and lands as a PR of its own; the Step 13 table names it in its ecosystem's row, and it stays whatever the batching answer.
 
 ## Step 13: Summary
 

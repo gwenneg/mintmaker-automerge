@@ -420,7 +420,11 @@ only), and GitHub allows a merge of a behind branch unless a rule requires
 branches to be up to date. The cost is the first reason above: a PR merges
 as tested against the base it was opened on, like a human merge without
 "Update branch", and a broken combination shows on the base branch's build
-instead of on the PR. The skill writes the `keepUpdatedLabel` option next
+instead of on the PR. The scan reads the rulesets' `strict_required_status_checks_policy`, GitHub's
+"Require branches to be up to date before merging", and reports it as
+`up_to_date_required`; when it is set, the skill withholds the option,
+since a behind branch that does not conflict could never merge. The
+skill writes the `keepUpdatedLabel` option next
 to it, Renovate's per-PR way back to `behind-base-branch`, and says so in
 the summary and the PR body. MintMaker's `tekton` and `lockFileMaintenance`
 blocks set `rebaseWhen: behind-base-branch` themselves, and a manager block

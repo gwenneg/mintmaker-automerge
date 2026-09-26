@@ -69,15 +69,17 @@ say "== Branch rules (Steps 9 and 11: the rulesets on the default branch, read w
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
-  br=$(gh api "repos/$slug/rules/branches/$db" --jq '([.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(", ")), ([.[] | select(.type=="required_status_checks") | .ruleset_id] | unique | map(tostring) | join(" ")), ([.[] | select(.type=="pull_request") | "\(.ruleset_id):\(.parameters.required_approving_review_count)"] | join(" "))' 2>/dev/null) && br="ok
+  br=$(gh api "repos/$slug/rules/branches/$db" --jq '([.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(", ")), ([.[] | select(.type=="required_status_checks") | .ruleset_id] | unique | map(tostring) | join(" ")), ([.[] | select(.type=="pull_request") | "\(.ruleset_id):\(.parameters.required_approving_review_count)"] | join(" ")), ([.[] | select(.type=="required_status_checks") | .parameters.strict_required_status_checks_policy] | any)' 2>/dev/null) && br="ok
 $br"
 fi
 if [ -z "$br" ]; then
   say "branch_rules: not checked (takes gh logged in, a GitHub remote and a known default branch)"
+  say "up_to_date_required: not checked"
 else
   checks=$(printf '%s\n' "$br" | sed -n 2p); check_rs=$(printf '%s\n' "$br" | sed -n 3p); pr_rs=$(printf '%s\n' "$br" | sed -n 4p)
-  checks_id=${check_rs%% *}; pr_id=${pr_rs%% *}; pr_id=${pr_id%%:*}
+  checks_id=${check_rs%% *}; pr_id=${pr_rs%% *}; pr_id=${pr_id%%:*}; strict=$(printf '%s\n' "$br" | sed -n 5p)
   say "required_checks: ${checks:-none}"
+  say "up_to_date_required: $([ "$strict" = true ] && printf yes || printf no) (the rule that a PR branch must be up to date before merging; with yes, rebasing only on conflict would stop every automerge PR, since Renovate never rebases a branch that is behind but not in conflict)"
   rsname() { gh api "repos/$slug/rulesets/$1" --jq .name 2>/dev/null; }
   rsbypass() { gh api "repos/$slug/rulesets/$1" --jq "[.bypass_actors[]? | select(.actor_type==\"Integration\" and .actor_id==$KONFLUX_APP_ID) | .bypass_mode] | join(\",\")" 2>/dev/null; }
   [ -z "$pr_rs" ] && say "approval_rule: none (no pull request rule on $db, nothing to bypass)"
@@ -283,6 +285,7 @@ if [ -n "$found" ]; then
       $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ replaced by the Step 9 gate choice") }
       $0 ~ key("rebaseWhen") { r("`rebaseWhen`", "⚠️ replaced by the Step 10 rebasing choice") }
       $0 ~ key("keepUpdatedLabel") { r("`keepUpdatedLabel`", "⚠️ replaced by the Step 10 rebasing choice") }
+      $0 ~ key("groupName") { r("custom `groupName`", "kept, after the ecosystem rule of its manager, so its group stays and automerges with it") }
     ' "$c")
 "
     grep -q -E "$(key packageRules)" "$c" && CFGKEPT="Existing package rules are kept and reviewed with the new ones."
