@@ -10,6 +10,8 @@
 // transcript and the written files are then checked against expect.json.
 //
 // Usage: node run.mjs [fixture...] [--serial] [--keep]
+// EVAL_EFFORT=low|medium|high|xhigh|max sets the model's reasoning effort for an A/B;
+// unset, every run uses Claude Code's default, which is what a user gets.
 // Needs a Claude credential the CLI can use: a claude.ai login, or
 // CLAUDE_CODE_OAUTH_TOKEN from `claude setup-token`, or ANTHROPIC_API_KEY.
 //
@@ -42,9 +44,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // A Claude Code session running this script would otherwise silence the
-// nested CLI the SDK spawns.
+// nested CLI the SDK spawns, and hand it the session's reasoning effort
+// through CLAUDE_EFFORT, so a local run would not measure what CI measures.
 for (const k of Object.keys(process.env)) {
-  if (/^(CLAUDECODE$|CLAUDE_CODE_(ENTRYPOINT|CHILD_SESSION|SESSION_ID|MESSAGING|BRIDGE))/.test(k)) delete process.env[k];
+  if (/^(CLAUDECODE$|CLAUDE_EFFORT$|CLAUDE_CODE_(ENTRYPOINT|CHILD_SESSION|SESSION_ID|MESSAGING|BRIDGE))/.test(k)) delete process.env[k];
 }
 // The fixtures point at repositories that do not exist: git must fail fast rather than ask for a login.
 process.env.GIT_TERMINAL_PROMPT = "0";
@@ -199,6 +202,7 @@ async function runFixture(name) {
         cwd: repo,
         plugins: [{ type: "local", path: pluginDir }],
         settingSources: [],
+        ...(process.env.EVAL_EFFORT ? { effort: process.env.EVAL_EFFORT } : {}), // explicit, never inherited
         maxTurns: 100,
         abortController: abort,
         canUseTool: async (tool, input) => {

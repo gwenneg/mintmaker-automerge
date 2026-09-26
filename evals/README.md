@@ -54,6 +54,10 @@ logs, and the generated configs land in `results/<timestamp>-<pid>/`.
 Set `PLUGIN_DIR` to another checkout of the plugin to run the fixtures
 against it, for an A/B between two versions.
 
+Every run uses Claude Code's default reasoning effort, the one a user gets;
+the driver drops the `CLAUDE_EFFORT` a Claude Code session would pass to it,
+and `EVAL_EFFORT=high` (or another level) sets one explicitly for an A/B.
+
 The model is not deterministic, so a failure is a transcript to read, not
 always a bug: the `.log` file shows what was printed and answered at each
 step, and the `.jsonl` file has every message.
