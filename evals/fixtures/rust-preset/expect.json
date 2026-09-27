@@ -13,7 +13,8 @@
     ],
     "*",
     [
-      "Base images"
+      "Base images",
+      "RPM lockfiles"
     ],
     [
       "Merge days",
@@ -57,7 +58,8 @@
     },
     "Base images": "Keep them manual",
     "Pipeline": "Saturday",
-    "Batching": "all ecosystems"
+    "Batching": "all ecosystems",
+    "RPM lockfiles": "[SECURITY]"
   },
   "followups": [
     {
@@ -101,7 +103,8 @@
     "\"ignoreTests\": false",
     "{\"matchManagers\":[\"dockerfile\"],\"pinDigests\":true}",
     "\"groupName\": \"all non-major dependencies\"",
-    "\"groupName\": null"
+    "\"groupName\": null",
+    "\"rpmVulnerabilityAutomerge\": \"HIGH\""
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -112,7 +115,10 @@
     "\"ignoreTests\": true",
     "{\"matchManagers\":[\"dockerfile\"],\"matchUpdateTypes\":",
     "rebaseWhen",
-    "\"groupName\": \"Cargo dependencies\""
+    "\"groupName\": \"Cargo dependencies\"",
+    "\"rpm-lockfile\"",
+    "\"ALL\"",
+    "refresh-rpm-lockfiles"
   ],
   "textLacks": [
     "the reply opens with",

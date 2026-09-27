@@ -198,13 +198,19 @@ Header "Majors", question "Any actions whose major bumps may automerge too?": No
 
 ## Step 7: Base images
 
-No container file in the report: print the report's Skipped steps block for Step 7 verbatim, then the Step 8 screen in the same reply.
-Otherwise the header, the report's base images table verbatim, the note, then up to two questions in one call, the second only when relevant.
+No container file and no RPM lockfile in the report: print the report's Skipped steps block for Step 7 verbatim, then the Step 8 screen in the same reply.
+Otherwise the header, the report's base images table verbatim, then its RPM lockfiles table verbatim when it has one, the note, then up to three questions in one call, each only when relevant.
+With RPM lockfiles and no base image, the base images table, the note and the two base image questions are left out.
 
 💡 The release-age delay does not cover most base images: Renovate only learns publish dates from Docker Hub, and MintMaker treats a release without one as old enough. For an image from `registry.access.redhat.com` or `quay.io`, your required checks are the only protection, and the Konflux PR build is the check that actually builds on the new base: remember that if you make the required checks the gate in Step 9.
 
 Header "Base images": Automerge digest, patch and minor bumps (Recommended), the Konflux PR build builds the image and the tests run on it, majors such as a new RHEL or JDK line stay manual / Keep them manual.
 Header "Pin base images", only when an image has no digest: Pin to `tag@sha256` (Recommended), Renovate opens one manual pin PR, after which rebuilds of the same tag arrive as digest PRs / Keep tags only, rebuilds then go unnoticed.
+Header "RPM lockfiles", only when the report has an RPM lockfiles table, question "Should the RPM lockfile refreshes merge on their own?": Automerge every refresh (Recommended), the regular ones and the `[SECURITY]` ones: the Konflux PR build installs the refreshed RPMs and builds the image, and the tests run on it; with base images in the repo, add that their PRs refresh the lockfile too, so the new base is built with matching RPMs / Automerge the `[SECURITY]` refreshes only, whatever the severity of their CVEs: the nightly refresh often carries the same builds and has nothing left once the `[SECURITY]` one merges / Keep them manual.
+When the report's `rpm_security_threshold` is not `none`, the second option keeps it instead, `Keep automerging the [SECURITY] refreshes at <threshold> or higher`, said as today's setting, and when that threshold comes from a preset, the third option is left out: the preset keeps automerging them whatever this file says, and only taking it out of `extends` stops that, which the user can ask for at the Step 13 summary.
+When the existing config sets `automerge: true` in a top-level `lockFileMaintenance` block, which the Step 3 table flags, the question is not asked: one line under the table says every RPM refresh already automerges through it, with the other lockfiles of the repo; when no other question of the step is left, that line closes it and the Step 8 screen follows in the same reply.
+
+With an RPM lockfiles table, one line above the questions: MintMaker refreshes the whole lockfile at once from the repositories in `rpms.in.yaml`, with no release-age delay, so the Konflux PR build is what tests the new RPMs, as for a base image.
 
 When the table flags a `latest` tag, one line above the questions: a `latest` tag carries no version, so Renovate has nothing to bump; with the digest pinned, rebuilds of `latest` arrive as digest PRs, the only update those files can get.
 The automerge option then says "digest updates" rather than "patch and minor".
@@ -345,7 +351,7 @@ Never fetch an example config from another repository: these blocks are the refe
 
 ### The skeleton
 
-Header comment, the optional `extends` block for action pinning, the `tekton` block, and a `{{PACKAGE_RULES}}` placeholder.
+Header comment, the optional `extends` block for action pinning, the `tekton` block, the RPM block below when Step 7 automerged RPM lockfile refreshes, and a `{{PACKAGE_RULES}}` placeholder.
 Drop the `extends` block only when the user declined pinning, never because every action is already SHA-pinned: it costs nothing then, and an action added later as `@v1` gets its pin PR from it, SHA and full version at once. The `rangeStrategy` rule of the github-actions block follows the same answer. Drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
 The `ignoreTests` line and its comment become the gate block below when Step 9 chose the required checks as the only gate.
 The rebase block below comes right after the gate when Step 10 chose to rebase only on conflict, otherwise nothing is written for it, and the merge-days block comes after it.
@@ -398,6 +404,28 @@ The gate block, in place of the `ignoreTests` line and its comment:
   // A non-required check never holds a merge, red or not.
   "ignoreTests": true,
 ```
+
+The RPM block, after the `tekton` block, when Step 7 chose to automerge every RPM lockfile refresh.
+It is a manager block rather than a package rule: MintMaker's docs note that a rule matching package names never applies to a lockfile refresh, and its `lockFileMaintenance` schedule, nightly from 0:00 to 4:59 UTC, stays in force whatever the merge days of Step 8 are.
+
+```jsonc
+  "rpm-lockfile": {
+    // RPM lockfile refreshes, the [SECURITY] ones included: the Konflux PR build
+    // installs the refreshed RPMs and builds the image, and the tests run on it.
+    "automerge": true
+  },
+```
+
+When Step 7 chose the `[SECURITY]` refreshes only, this line takes its place, at the same spot:
+
+```jsonc
+  // [SECURITY] RPM lockfile refreshes merge on their own, whatever the severity of
+  // their CVEs; the regular refreshes stay on manual review.
+  "rpmVulnerabilityAutomerge": "ALL",
+```
+
+When the user kept an existing threshold, the value is that threshold and the comment says `// [SECURITY] RPM lockfile refreshes merge on their own when every CVE they fix is <threshold> or higher; the others and the regular refreshes stay on manual review.`, wrapped the same way; `MEDIUM` is said as moderate.
+An existing `rpm-lockfile` block keeps its other keys: the `automerge` line goes into it, or out of it when the refreshes stay manual.
 
 The rebase block, only when Step 10 chose to rebase only on conflict:
 
@@ -491,6 +519,17 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     // Pins FROM lines to tag@sha256, so rebuilds of a tag arrive as digest PRs.
     "matchManagers": ["dockerfile"],
     "pinDigests": true
+  },
+  {
+    // Regenerates the RPM lockfiles in the same PR as a base image update, so the
+    // Konflux build tests the new base with the RPMs resolved against it.
+    "matchManagers": ["dockerfile"],
+    "postUpgradeTasks": {
+      "commands": ["refresh-rpm-lockfiles -f \"$RENOVATE_POST_UPGRADE_COMMAND_DATA_FILE\""],
+      "fileFilters": ["**/rpms.lock.yaml"],
+      "executionMode": "branch",
+      "dataFileTemplate": "[{{#each upgrades}}{\"packageFile\": \"{{{packageFile}}}\"}{{#unless @last}},{{\/unless}}{{\/each}}]"
+    }
   },
 
   // --- gomod: patch and minor, indirect dependencies included; majors and the toolchain stay manual
@@ -605,6 +644,9 @@ How the answers map to the blocks:
   A package the user typed gets the managers whose files hold it and the comment `// Named during setup: stays on manual review whatever the update type.`
   Candidates folded into one menu option still get one rule each; none when the user chose none, and the separator line then names no packages.
 - Base images: drop the `pinDigests` rule only when the user kept tags only, never because the images are already pinned, since an image added later on a bare tag gets its pin PR from it; drop the automerge rule when they kept base images manual, and the separator line then says so.
+- RPM lockfiles: the RPM block of the skeleton carries the answer, and nothing is written for it when they were kept manual.
+  The `postUpgradeTasks` rule of the dockerfile block is written only when Step 7 chose to automerge every RPM refresh and the report's `rpm_refresh_on_base_image` says no; it stands whatever the base images answer, since a base image PR that needs review gets the matching lockfile as well, and it is dropped in every other case, so a base image PR never carries an RPM change the user kept manual.
+  Copy its `commands` and `dataFileTemplate` strings exactly: the command must match MintMaker's `allowedCommands` character for character, or MintMaker refuses to run it.
 - Go: drop the indirect rule when the user automerges indirect dependencies; the separator line says whether they are included.
 - npm: copy exactly one of the two scope rules, then the packageManager rule; the allow-list width is the "allow-list width" block with `npm` as the manager.
 - Python: keep only the managers the report detected.
@@ -624,7 +666,7 @@ The menu labels below are fixed: a menu that says the files are already written 
 
 Show the whole trust decision in one table: one row per detected ecosystem, one for the Konflux pipeline, one for vulnerability fixes, one for the build toolchains when the report lists any, and one row per ecosystem found that gets no rule.
 This screen is never skipped and never shortened, whatever came before it, and the "Write it" menu is not asked until it has been printed: the user approves what they see in that table, nothing else.
-Below it, one line with the merge days when they are not any day, the cron said in words, then one line with the batching choice, `Batching: one PR per ecosystem.`, `one PR for all ecosystems.` or `one PR per update.`, then, when Step 10 chose to rebase only on conflict, `⚠️ Rebasing: only on conflict. A PR merges as tested against the base it was opened on; a broken combination shows on the \`<default_branch>\` build, not on the PR.`, then one line with the Step 12 decision, when there was one, then one line with the branch MintMaker is disabled on, from Step 2, when there is one, `MintMaker: to be disabled on \`<branch>\` by annotating its component(s) \`<components>\` yourself; the rules above stop applying there.`, then, when Step 9 chose the required checks as the only gate, `⚠️ Merge gate: the required checks of \`<default_branch>\` only. A non-required check never holds a merge, and without any required check a PR merges on red CI.`, then one line saying what the answer does: it writes files in the working tree, nothing more.
+Below it, one line with the merge days when they are not any day, the cron said in words, adding that RPM lockfile refreshes keep MintMaker's nightly window when Step 7 automerged them, then one line with the batching choice, `Batching: one PR per ecosystem.`, `one PR for all ecosystems.` or `one PR per update.`, then, when Step 10 chose to rebase only on conflict, `⚠️ Rebasing: only on conflict. A PR merges as tested against the base it was opened on; a broken combination shows on the \`<default_branch>\` build, not on the PR.`, then one line with the Step 12 decision, when there was one, then one line with the branch MintMaker is disabled on, from Step 2, when there is one, `MintMaker: to be disabled on \`<branch>\` by annotating its component(s) \`<components>\` yourself; the rules above stop applying there.`, then, when Step 9 chose the required checks as the only gate, `⚠️ Merge gate: the required checks of \`<default_branch>\` only. A non-required check never holds a merge, and without any required check a PR merges on red CI.`, then one line saying what the answer does: it writes files in the working tree, nothing more.
 The pipeline row says "any day" when the merge days are any day, "Saturdays" when the batch was kept.
 Nothing is committed or pushed before Step 14.
 
@@ -638,6 +680,7 @@ Nothing is committed or pushed before Step 14.
 | Konflux pipeline | task bumps, migrations, Monday to Thursday | – | the Konflux PR build tests them |
 | Vulnerability fixes | patch, minor, without the release-age delay | fixes needing a major | inherited from MintMaker |
 | Base images | digest, patch, minor of `ubi9/openjdk-21` | majors, a new RHEL or JDK line | the Konflux PR build tests the image |
+| RPM lockfiles | refreshes of `rpms.lock.yaml`, `[SECURITY]` ones included, nightly, and with each base image update | – | the Konflux PR build installs them |
 | Build toolchains | – | Maven wrapper | kept manual, every developer builds with it |
 
 Merge days: Monday to Thursday, UTC. Vulnerability fixes still arrive and merge any day.

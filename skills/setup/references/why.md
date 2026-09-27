@@ -215,6 +215,67 @@ pipeline updates arrive within hours instead. Dropping the line keeps the
 weekly batch. When the repo has merge days, the line carries their cron
 instead, so the pipeline follows the same days.
 
+## Why RPM lockfile refreshes can automerge
+
+MintMaker's `rpm-lockfile` manager is its own extension to Renovate. It
+reads `rpms.in.yaml`, the repositories and packages of a hermetic build,
+and regenerates the `rpms.lock.yaml` next to it with
+`rpm-lockfile-prototype`. An RPM cannot be pinned to a version range there,
+so there is no per-package update: the whole lockfile is refreshed at once,
+in one `Refresh RPM lockfiles` PR, whenever the repositories publish newer
+builds. MintMaker's global config schedules those refreshes nightly, from
+0:00 to 4:59 UTC, and a refresh fixing a CVE arrives as a separate
+`[SECURITY]` PR that ignores the schedule. MintMaker docs:
+https://konflux-ci.dev/docs/mintmaker/rpm-lockfile/
+
+A refresh has no publish date, so the release-age delay never applies,
+and the Konflux PR build is the check that matters: it prefetches the
+RPMs of the new lockfile, installs them in the image, and the integration
+tests run on that image. That is the same protection a base image digest
+gets in Step 7, and the RPMs come from the same vendor repositories.
+
+The setting is `"rpm-lockfile": {"automerge": true}`, a manager block, and
+MintMaker documents that it covers both the regular and the `[SECURITY]`
+refreshes. A package rule would not do: MintMaker notes that a rule
+matching package names never applies to a lockfile refresh. The
+security-only option writes `rpmVulnerabilityAutomerge: "ALL"` instead,
+MintMaker's setting for automerging `[SECURITY]` refreshes above a CVE
+severity, `ALL` meaning any; it is ignored once the manager block
+automerges every refresh, so the file never holds both.
+
+The two kinds of refresh often carry the same change. A `[SECURITY]`
+refresh is opened when a CVE in MintMaker's database is fixed by a newer
+build, and the nightly refresh picks up the same newest builds, so both PRs
+can hold the same lockfile, byte for byte: RedHatInsights/scheduler had
+#175 and #178 open side by side for the same `util-linux` update. Merging
+either leaves the other with nothing to change. That is why the
+security-only answer automerges more than it sounds: whenever the newest
+builds include a CVE fix, the regular refresh is covered by it.
+
+A threshold already set in the repo is kept rather than replaced by `ALL`.
+MintMaker's `cve-automerge-*` presets set it too, `critical`, `high`,
+`moderate` (`MEDIUM`) or `all`, together with a rule automerging every
+vulnerability fix. Renovate merges a file's `extends` presets first and
+the file's own keys on top, so a threshold written in the file wins over
+the preset's; a preset left in place still automerges the `[SECURITY]`
+refreshes, which is why "keep them manual" is not offered while one is
+there.
+
+## Why a base image update refreshes the RPM lockfile too
+
+`rpm-lockfile-prototype` resolves the RPMs against the base image named in
+the `context` of `rpms.in.yaml`: a package the image already has stays out
+of the lockfile, and a dependency is picked to fit what the image ships.
+A new base image can make that resolution stale, so MintMaker ships
+`refresh-rpm-lockfiles`, a post-upgrade task that regenerates the lockfiles
+inside the base image PR, and the Konflux build then tests the new base
+with RPMs resolved against it. MintMaker allows the command in its global
+`allowedCommands` and offers it as the `refresh-rpm-lockfiles` preset; the
+skill writes the preset's rule inline instead, for the reasons of the
+shared preset section below. The rule is written only when every RPM
+refresh automerges: otherwise an automerged base image PR would carry an
+RPM change the user chose to review. https://github.com/konflux-ci/refresh-rpm-lockfiles
+
 ## Why GitHub's auto-merge feature is off, and what the gate choice means
 
 The generated file sets `platformAutomerge: false`. With the default,

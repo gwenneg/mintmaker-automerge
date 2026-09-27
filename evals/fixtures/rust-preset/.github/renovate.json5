@@ -6,6 +6,8 @@
     "github>konflux-ci/mintmaker//config/renovate/renovate.json",
   ],
   minimumReleaseAge: "1 day",
+  // Security RPM refreshes fixing a High or Critical CVE merge on their own.
+  rpmVulnerabilityAutomerge: "HIGH",
   enabledManagers: ["cargo", "dockerfile"],
   packageRules: [
     {
