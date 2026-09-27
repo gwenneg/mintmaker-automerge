@@ -1,0 +1,13 @@
+contentOrigin:
+  repos:
+    - repoid: ubi-9-baseos
+      baseurl: https://cdn-ubi.redhat.com/content/public/ubi/dist/ubi9/9/$basearch/baseos/os/
+
+packages:
+  - openssl-devel
+
+arches:
+  - x86_64
+
+context:
+  containerfile: ../Containerfile

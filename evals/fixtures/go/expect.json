@@ -24,7 +24,8 @@
       "Majors"
     ],
     [
-      "Base images"
+      "Base images",
+      "RPM lockfiles"
     ],
     [
       "Merge days",
@@ -78,7 +79,10 @@
     "pinDigests",
     "\"groupName\": \"Go modules\"",
     "\"groupName\": \"base images\"",
-    "\"groupName\": null"
+    "\"groupName\": null",
+    "\"rpm-lockfile\": {\"automerge\": true}",
+    "refresh-rpm-lockfiles -f \\\"$RENOVATE_POST_UPGRADE_COMMAND_DATA_FILE\\\"",
+    "\"fileFilters\": [\"**/rpms.lock.yaml\"]"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -86,7 +90,8 @@
     "enabledManagers",
     "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}",
     "\"ignoreTests\": true",
-    "rebaseWhen"
+    "rebaseWhen",
+    "rpmVulnerabilityAutomerge"
   ],
   "answers": {
     "Scope": "Only packages I'll name"

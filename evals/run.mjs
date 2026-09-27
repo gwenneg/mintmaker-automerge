@@ -78,7 +78,7 @@ const STEP_OF = {
   Scope: 4, "Go indirect": 4,
   Toolchains: 5,
   "Pin actions": 6, "Allow-list": 6,
-  "Base images": 7, "Pin base images": 7,
+  "Base images": 7, "Pin base images": 7, "RPM lockfiles": 7,
   "Merge days": 8, Pipeline: 8,
   "Merge gate": 9, "Gate checks": 9,
   Batching: 10, Rebasing: 10,
@@ -343,7 +343,8 @@ async function runFixture(name) {
         try { body = squash(JSON.stringify(JSON5.parse(raw))); } catch (e) { check(false, `${expect.config} does not parse: ${e.message}`); }
         for (const s of expect.configContains ?? []) check(body.includes(squash(s)), `${expect.config} lacks ${JSON.stringify(s)}`);
         for (const s of expect.configLacks ?? []) check(!body.includes(squash(s)), `${expect.config} still contains ${JSON.stringify(s)}`);
-        check(!/<[a-z-]+>|\{\{/.test(raw), `${expect.config} has an unfilled placeholder`);
+        // The skill's placeholders are uppercase; a Renovate template such as {{#each upgrades}} is content.
+        check(!/<[a-z-]+>|\{\{[A-Z_]+\}\}/.test(raw), `${expect.config} has an unfilled placeholder`);
       }
     }
     const wfDir = path.join(repo, ".github/workflows");

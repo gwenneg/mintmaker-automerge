@@ -12,6 +12,8 @@ FILES=$(git ls-files)
 list() { printf '%s\n' "$FILES" | grep -E "$1"; }
 CONTAINERFILES='((^|/|\.)([Dd]ocker|[Cc]ontainer)file$|(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*$)'
 WORKFLOWS='^\.github/workflows/[^/]+\.ya?ml$'
+# MintMaker's rpm-lockfile manager reads rpms.in.yaml and refreshes the rpms.lock.yaml next to it.
+RPMFILES='(^|/)rpms\.in\.ya?ml$'
 ACTIONFILES='^\.github/(workflows/[^/]+|actions/.+/action)\.ya?ml$'
 
 say "== Konflux"
@@ -165,6 +167,7 @@ pyproj=$(list '(^|/)pyproject\.toml$' | head -5 | tr '\n' ' ')
 eco cargo '(^|/)Cargo\.toml$' "Cargo"
 eco bundler '(^|/)Gemfile$' "Bundler"
 eco dockerfile "$CONTAINERFILES" "Container images"
+eco rpm-lockfile "$RPMFILES" "RPM lockfiles"
 eco pre-commit '(^|/)\.pre-commit-config\.yaml$' "pre-commit"
 eco github-actions "$ACTIONFILES" "GitHub Actions"
 eco helmv3 '(^|/)Chart\.yaml$' "Helm"
@@ -285,6 +288,10 @@ if [ -n "$found" ]; then
       $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ replaced by the Step 9 gate choice") }
       $0 ~ key("rebaseWhen") { r("`rebaseWhen`", "⚠️ replaced by the Step 10 rebasing choice") }
       $0 ~ key("keepUpdatedLabel") { r("`keepUpdatedLabel`", "⚠️ replaced by the Step 10 rebasing choice") }
+      $0 ~ key("rpmVulnerabilityAutomerge") { r("`rpmVulnerabilityAutomerge`", "⚠️ replaced by the Step 7 RPM lockfiles choice, which offers to keep its threshold") }
+      $0 ~ key("rpm-lockfile") { r("`rpm-lockfile` block", "kept; an `automerge` key in it is replaced by the Step 7 RPM lockfiles choice") }
+      $0 ~ key("lockFileMaintenance") { r("`lockFileMaintenance`", "kept; an `automerge: true` in it merges every lockfile refresh, the RPM ones included, and Step 7 says so") }
+      $0 ~ /refresh-rpm-lockfiles/ { r("`refresh-rpm-lockfiles`", "kept: base image PRs already refresh the RPM lockfiles, so Step 7 adds no rule for it") }
       $0 ~ key("groupName") { r("custom `groupName`", "kept, after the ecosystem rule of its manager, so its group stays and automerges with it") }
     ' "$c")
 "
@@ -437,6 +444,34 @@ else
     say "| \`$shown\` | $files | $pin |"
   done
 fi
+RPMS=$(list "$RPMFILES")
+# What the existing config already sets for RPM refreshes: the security threshold, directly or through a
+# MintMaker cve-automerge preset (the file's own key wins over a preset), and the base image refresh task.
+rpm_thr=""; rpm_bi=no
+for c in $found; do
+  [ -f "$c" ] || continue
+  v=$(grep -o -E "rpmVulnerabilityAutomerge$Q?[[:space:]]*:[[:space:]]*$Q?[A-Z]+" "$c" | head -1 | grep -o -E '[A-Z]+$')
+  [ -n "$v" ] && { rpm_thr="$v (\`rpmVulnerabilityAutomerge\` in \`$c\`)"; }
+  if [ -z "$rpm_thr" ]; then
+    pv=$(grep -o -E 'mintmaker-presets:cve-automerge-(all|critical|high|moderate)' "$c" | head -1 | sed 's/.*cve-automerge-//')
+    case "$pv" in all) rpm_thr="ALL" ;; critical) rpm_thr="CRITICAL" ;; high) rpm_thr="HIGH" ;; moderate) rpm_thr="MEDIUM" ;; esac
+    [ -n "$pv" ] && rpm_thr="$rpm_thr (preset \`cve-automerge-$pv\` in \`$c\`)"
+  fi
+  grep -q 'refresh-rpm-lockfiles' "$c" && rpm_bi=yes
+done
+if [ -z "$RPMS" ]; then
+  say ""; say "== RPM lockfiles table (print verbatim in Step 7)"; say "rpm_lockfiles: none"
+else
+  table "RPM lockfiles table (print verbatim in Step 7)" "| RPM lockfile | Refreshed from |"
+  # The lockfile sits next to its input file, rpms.lock.yaml or .yml.
+  say "$RPMS" | while read -r f; do
+    base="${f%rpms.in.y*ml}"
+    lock=$(printf '%s\n' "$FILES" | grep -x -F -e "${base}rpms.lock.yaml" -e "${base}rpms.lock.yml" | head -1)
+    if [ -n "$lock" ]; then say "| \`$lock\` | \`$f\` |"; else say "| \`${base}rpms.lock.yaml\` ⚠️ not committed, nothing to refresh yet | \`$f\` |"; fi
+  done
+  say "rpm_security_threshold: ${rpm_thr:-none} (the CVE severity at or above which [SECURITY] RPM refreshes already automerge)"
+  say "rpm_refresh_on_base_image: $rpm_bi (whether base image PRs already refresh the RPM lockfiles, via refresh-rpm-lockfiles)"
+fi
 
 # Build toolchains, shown in the Step 5 table: the version pins every developer's tooling reads, not just CI's.
 TC=""
@@ -485,7 +520,7 @@ n_sk=0
 if [ "$nbr" -le 1 ]; then skb=$(printf '%s\n' "$BRLINES" | awk '{print $2; exit}'); say "### ▶️ Step 2/14 Branches MintMaker updates"; say "Skipped: MintMaker runs on one branch, \`${skb:-$db}\`."; say ""; n_sk=$((n_sk+1)); fi
 if [ -z "$TC" ]; then say "### ▶️ Step 5/14 Build toolchains"; say "Skipped: no build toolchain pinned in this repo."; say ""; n_sk=$((n_sk+1)); fi
 if [ "$WORKFLOWS_FOUND" != yes ]; then say "### ▶️ Step 6/14 GitHub Actions"; say "Skipped: no GitHub workflows in this repo."; say ""; n_sk=$((n_sk+1)); fi
-if [ -z "$BASES" ]; then say "### ▶️ Step 7/14 Base images"; say "Skipped: no container file in this repo."; say ""; n_sk=$((n_sk+1)); fi
+if [ -z "$BASES" ] && [ -z "$RPMS" ]; then say "### ▶️ Step 7/14 Base images"; say "Skipped: no container file or RPM lockfile in this repo."; say ""; n_sk=$((n_sk+1)); fi
 case "$SB" in ✅*) say "### ▶️ Step 11/14 Konflux app bypass"; say "Skipped: ${SB#✅ }."; say ""; n_sk=$((n_sk+1)) ;; esac
 if [ ! -f .github/dependabot.yml ] && [ -z "$ou" ]; then say "### ▶️ Step 12/14 Other updaters"; say "Skipped: no other updater in this repo."; say ""; n_sk=$((n_sk+1)); fi
 [ "$n_sk" -gt 0 ] || say "(none: every step has something to ask)"
