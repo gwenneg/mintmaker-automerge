@@ -5,6 +5,7 @@
 # the script did not get there. Portable: bash 3, POSIX awk/sed/grep.
 set -u
 say() { printf '%s\n' "$*"; }
+SCRIPTS=$(cd "$(dirname "$0")" && pwd)
 
 git rev-parse --show-toplevel >/dev/null 2>&1 || { say "STATUS: not inside a git repository. Do the checks of Steps 1 to 4 by hand."; exit 0; }
 cd "$(git rev-parse --show-toplevel)" || exit 0
@@ -33,6 +34,8 @@ fi
 say "== Tooling"
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then HAVE_GH=yes; else HAVE_GH=no; fi
 say "gh: $HAVE_GH"
+# The comment check of the Step 13 write phase, by its full path.
+say "check_comments: $SCRIPTS/check-comments.sh (run only in the Step 13 write phase, never read)"
 # The oc client, for the Step 2 how-to: installed or not, with its version when it is.
 if command -v oc >/dev/null 2>&1; then say "oc: yes ($(oc version --client 2>/dev/null | head -1 | sed 's/^Client Version: *//'))"; else say "oc: no (not on the PATH)"; fi
 # The repository whose settings and PR matter: the upstream when the clone is a fork.
@@ -184,11 +187,11 @@ CANDS=""
 # cand <pattern> <file regex> <content regex> <name> <reason, reading on after the name> <link>
 cand() {
   hit=$(list "$2" | while read -r p; do grep -q -E "$3" "$p" && printf x; done)
-  [ -n "$hit" ] && CANDS="$CANDS- $4 (\`$1\`): $4 $5. $6
+  [ -n "$hit" ] && CANDS="$CANDS- $4 (\`$1\`): $4 $5: $6
 "
 }
 cand 'io.quarkus*' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'io\.quarkus' 'Quarkus' 'follows an LTS track, so a reviewer picks the target version' https://quarkus.io/releases/
-cand 'org.springframework.boot*' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'org\.springframework\.boot' 'Spring Boot' 'pins every managed Spring dependency, so a reviewer picks the target version' 'https://spring.io/projects/spring-boot#support'
+cand 'org.springframework.boot*' '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' 'org\.springframework\.boot' 'Spring Boot' 'pins its managed dependencies, so a reviewer picks the target version' 'https://spring.io/projects/spring-boot#support'
 cand '/^django$/i' '(^|/)(requirements[^/]*\.txt|pyproject\.toml|Pipfile|setup\.py)$' '[Dd]jango' 'Django' 'follows an LTS track, so a reviewer picks the target version' 'https://www.djangoproject.com/download/#supported-versions'
 cand '@angular/*' '(^|/)package\.json$' '"@angular/core"' 'Angular' 'follows an LTS track, so a reviewer picks the target version' https://angular.dev/reference/releases
 

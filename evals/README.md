@@ -22,7 +22,8 @@ nothing is committed or pushed, then checks:
 - nothing is written before the "Write it" answer, and the summary table
   is printed before it;
 - the expected files were written or removed, the config parses as JSONC,
-  contains the expected rules, and carries no leftover placeholder;
+  contains the expected rules, carries no leftover placeholder, and
+  passes the skill's comment check, every comment a template word for word;
 - the validator workflow was added, and the tree is left uncommitted.
 
 | Fixture | Exercises |

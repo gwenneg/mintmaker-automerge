@@ -6,6 +6,7 @@ model: sonnet
 allowed-tools:
   - Bash(${CLAUDE_SKILL_DIR}/scripts/detect.sh)
   - Bash(${CLAUDE_SKILL_DIR}/scripts/version.sh)
+  - Bash(${CLAUDE_SKILL_DIR}/scripts/check-comments.sh *)
 ---
 
 !`"${CLAUDE_SKILL_DIR}/scripts/version.sh"`
@@ -144,7 +145,7 @@ The screen: the header, the table verbatim, this note, then one of three cases.
 - **A strict `.json` file exists.** This line verbatim, the file name filled in, with no other lead-in, then a question, header "Rename": `Rename to renovate.jsonc (Recommended)`, for the comments / `Keep .json`, the comments then show as errors in some editors.
   On rename, the report's "is named in" line lists the files to update, a workflow path filter, a README, an AGENTS.md: a rename that breaks a validator workflow is worse than none.
 
-  `<config file>` is a strict `.json` file, and every rule written by this plugin has a comment saying why it exists: Renovate accepts comments in a `.json` file, but editors such as VS Code flag them as errors there, and `.jsonc` is the file name that allows them.
+  `<config file>` is a strict `.json` file, and this plugin writes a comment wherever a setting needs its reason next to it: Renovate accepts comments in a `.json` file, but editors such as VS Code flag them as errors there, and `.jsonc` is the file name that allows them.
 - **No config.** Question, header "Location": `renovate.jsonc` at the root (Recommended), the first place Renovate looks and the one MintMaker's docs use / `.github/renovate.jsonc`.
 
 ## Step 4: Libraries
@@ -349,43 +350,38 @@ The answers are applied in Step 13, after "Write it", never here.
 Assemble the config in Step 13 from the two blocks below, driven by the answers of Steps 4 to 8 and 10.
 Never fetch an example config from another repository: these blocks are the reference.
 
+### The comments
+
+Every comment in the file is copied word for word from these blocks, or from a comment this file quotes as `// ...`: never written, reworded, merged, wrapped or adapted to the repository. A `<...>` in a comment is filled in, and nothing else changes. A rule whose block has no comment gets none.
+A setting kept from the existing config keeps its own comments as they were, under one marker line of its own, right above them: `// Repository rule, not written by the plugin:` above a kept rule, `// Repository setting, not written by the plugin:` above a kept key. A kept rule goes after the ecosystem rule of its manager, before that ecosystem's manual rules, as the Batching item below says, or at the end of `packageRules` when it names no manager of the file; a kept top-level key goes after `packageRules`; a key kept inside a block the plugin writes, such as `rpm-lockfile` or `extends`, stays in that block.
+In a config this plugin wrote before, a comment of an earlier version, the `// ---` separator lines included, is replaced by the comment of the current block, or dropped when the current block has none.
+
 ### The skeleton
 
 Header comment, the optional `extends` block for action pinning, the `tekton` block, the RPM block below when Step 7 automerged RPM lockfile refreshes, and a `{{PACKAGE_RULES}}` placeholder.
 Drop the `extends` block only when the user declined pinning, never because every action is already SHA-pinned: it costs nothing then, and an action added later as `@v1` gets its pin PR from it, SHA and full version at once. The `rangeStrategy` rule of the github-actions block follows the same answer. Drop the `tekton` block's `schedule` line and its comment when they kept the Saturday batch.
-The `ignoreTests` line and its comment become the gate block below when Step 9 chose the required checks as the only gate.
+The `ignoreTests` line becomes the gate block below when Step 9 chose the required checks as the only gate.
 The rebase block below comes right after the gate when Step 10 chose to rebase only on conflict, otherwise nothing is written for it, and the merge-days block comes after it.
 Merge days other than any day add the two lines of the merge-days block below, after the gate and the rebase block, and the `tekton` block's `schedule` line then takes the same cron with the comment `// Same days as the rest, instead of MintMaker's Saturday batch.`
 Typed merge days become a cron with `*` for the minutes, the way MintMaker writes its own schedules, `0` being Sunday; a timezone named in the answer becomes a top-level `"timezone"` line with its IANA name, and without one the days are UTC.
 The days are a `schedule`, not an `automergeSchedule`: MintMaker sets `updateNotScheduled` to false, so a run outside the days skips an existing branch before any merge attempt, and one option bounds the pushes and the merges alike.
-The comments are part of the file the user keeps: copy them as they are, never add instructions meant for you, and never restate what the header already says.
-The marker is the first line of the file, before the opening brace, which Renovate and the validator accept; `<version>` in it is the `plugin_version` line at the top of this file, printed as in the welcome title. When the existing config already has the marker, on its first line or in its header, replace it there, so the file names the version that last wrote it.
+The marker is the first line of the file and the Overrides line the second, both before the opening brace, which Renovate and the validator accept; `<version>` in it is the `plugin_version` line at the top of this file, printed as in the welcome title. When the existing config already has the marker, on its first line or in its header, replace it there, so the file names the version that last wrote it.
 
 ```jsonc
 // Set up with the MintMaker Automerge plugin <version>: https://github.com/gwenneg/mintmaker-automerge
+// Overrides MintMaker's global config: https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  // Renovate overrides for this repository. MintMaker merges them on top of its
-  // global config, which sets the managers, the release-age delay, the
-  // vulnerability alerts, branch naming and PR limits:
-  // https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
-  // A key set here replaces the inherited value; packageRules are added to the
-  // inherited ones; enabledManagers would replace the whole list, so it is never set.
-  // Policy: patch and minor updates of the ecosystems below merge on their own once
-  // the required checks pass. Majors stay on manual review unless a rule names them.
-  // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
-  // Renovate merges each PR itself, on the first run where GitHub allows the merge:
-  // GitHub's auto-merge feature never completes when a bypass actor is what satisfies
-  // the approval rule, so it stays off.
+  // GitHub auto-merge never completes when a bypass actor meets the approval rule.
+  // Renovate merges instead, on the first run where GitHub allows it.
   "platformAutomerge": false,
-  // Every check on the PR must be green first, required or not.
   "ignoreTests": false,
   "extends": [
-    // Pins actions to commit SHAs, so a version bump can be told from a moved tag.
+    // Keep even when every action is pinned: it pins the next one added.
     "helpers:pinGitHubActionDigests"
   ],
   "tekton": {
-    // Konflux pipeline updates in .tekton/: the PR's own Konflux build tests them.
+    // The PR's own Konflux build runs the updated pipeline.
     "automerge": true,
     // Any day, instead of MintMaker's Saturday batch.
     "schedule": ["at any time"]
@@ -396,12 +392,10 @@ The marker is the first line of the file, before the opening brace, which Renova
 }
 ```
 
-The gate block, in place of the `ignoreTests` line and its comment:
+The gate block, in place of the `ignoreTests` line:
 
 ```jsonc
-  // The required checks of the base branch are the whole gate: Renovate asks for
-  // the merge without reading any check, and GitHub refuses until they pass.
-  // A non-required check never holds a merge, red or not.
+  // Only the required checks gate the merge: a red optional check does not block it.
   "ignoreTests": true,
 ```
 
@@ -410,8 +404,7 @@ It is a manager block rather than a package rule: MintMaker's docs note that a r
 
 ```jsonc
   "rpm-lockfile": {
-    // RPM lockfile refreshes, the [SECURITY] ones included: the Konflux PR build
-    // installs the refreshed RPMs and builds the image, and the tests run on it.
+    // The Konflux build installs the refreshed RPMs, so a refresh is tested like any PR.
     "automerge": true
   },
 ```
@@ -419,30 +412,26 @@ It is a manager block rather than a package rule: MintMaker's docs note that a r
 When Step 7 chose the `[SECURITY]` refreshes only, this line takes its place, at the same spot:
 
 ```jsonc
-  // [SECURITY] RPM lockfile refreshes merge on their own, whatever the severity of
-  // their CVEs; the regular refreshes stay on manual review.
+  // Regular refreshes stay manual.
   "rpmVulnerabilityAutomerge": "ALL",
 ```
 
-When the user kept an existing threshold, the value is that threshold and the comment says `// [SECURITY] RPM lockfile refreshes merge on their own when every CVE they fix is <threshold> or higher; the others and the regular refreshes stay on manual review.`, wrapped the same way; `MEDIUM` is said as moderate.
+When the user kept an existing threshold, the value is that threshold and the comment is `// Regular refreshes, and fixes of CVEs below <threshold>, stay manual.`, the threshold in lowercase, `MEDIUM` said as moderate.
 An existing `rpm-lockfile` block keeps its other keys: the `automerge` line goes into it, or out of it when the refreshes stay manual.
 
 The rebase block, only when Step 10 chose to rebase only on conflict:
 
 ```jsonc
-  // PRs are rebased only when they conflict, so a PR merges as tested against the
-  // base it was opened on, like a human merge without "Update branch". Two bumps
-  // merged in a row are never tested together: a broken combination shows on the
-  // base branch's build. The label below puts one PR back on rebase-when-behind.
+  // Throughput: no rebase or CI rerun after a merge, so each run merges two PRs, not one.
+  // Risk: those two are never tested together. Label a PR keep-updated to rebase it.
   "rebaseWhen": "conflicted",
   "keepUpdatedLabel": "keep-updated",
 ```
 
-The merge-days block, here for Monday to Thursday:
+The merge-days block, here for Monday to Thursday; for other days, the comment names them the same way, with the timezone in place of UTC when the answer named one:
 
 ```jsonc
-  // PRs open and rebase Monday to Thursday, UTC, and merge once their checks pass.
-  // Vulnerability fix PRs ignore the schedule.
+  // <Monday to Thursday, UTC>. Vulnerability fixes ignore the schedule.
   "schedule": ["* * * * 1-4"],
 ```
 
@@ -453,26 +442,22 @@ Copy the blocks for the detected ecosystems into the placeholder, fill the names
 Rules apply in order and a later rule overrides an earlier one, so a manual-review rule or a majors rule goes after the ecosystem rule it narrows or widens.
 Everything MintMaker's global config already sets stays out of the file; if the user asks for a key the blocks don't have, check the global config first, since a duplicate drifts out of sync.
 
-Each ecosystem opens with a separator line that states its decision, the same facts as its row of the Step 13 table: what merges on its own, then what stays manual.
+A blank line separates the ecosystems; no line names them, since `matchManagers` does.
 The github-actions block keeps its `rangeStrategy` rule whenever the block is written, every action already pinned included: a `# v4` comment next to a SHA needs it as much as a `@v4` ref, since without it that action never gets a patch or minor PR and the allow-list matches nothing. The one case that drops the rule, and the `extends` block with it, is a "Don't pin" answer: the user chose floating tags, and the rule would rewrite them.
-That line is the comment of the plain patch-and-minor rule, which carries none of its own.
-A rule that narrows or widens the policy carries one or two lines saying why, and nothing else: no "optional", no "delete if", no restating of the policy.
 The `groupName` lines are the batching of Step 10, written below for one PR per ecosystem: every automerge rule names its group, and every rule that keeps something manual inside a grouped manager unsets it with `null`, since a group automerges only when every member does.
 
 ```jsonc
 [
-  // --- github-actions: patch and minor of the actions named below; majors, digest-only and every other action stay manual
   {
-    // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
-    // never automerge. Pinning writes the full version once, in a manual PR, and later
-    // releases are patch or minor.
+    // Needed even when SHA-pinned: without it, a v4-style tag gets only digest PRs, which
+    // never automerge. Expect one manual PR that writes the full version.
     "matchManagers": ["github-actions"],
     "matchDepTypes": ["action"],
     "rangeStrategy": "pin"
   },
   {
-    // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
-    // moved tag with no version change, the shape of a hijacked action, never merges alone.
+    // Named actions only: an action runs code in CI. Digest-only updates stay manual:
+    // a moved tag with no version change is what a hijacked action looks like.
     "matchManagers": ["github-actions"],
     "matchUpdateTypes": ["patch", "minor"],
     "matchDepNames": ["<action-in-use>", "<action-in-use>"],
@@ -480,7 +465,6 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "GitHub Actions"
   },
 
-  // --- maven: patch and minor; majors, <the manual-review packages> and the wrapper stay manual
   {
     "matchManagers": ["maven"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -493,7 +477,6 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "automerge": false
   },
 
-  // --- gradle: patch and minor; majors, <the manual-review packages> and the wrapper stay manual
   {
     "matchManagers": ["gradle"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -506,23 +489,22 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "automerge": false
   },
 
-  // --- dockerfile: digest, patch and minor of the base images; majors stay manual
   {
-    // The Konflux PR build builds and tests the image. A digest update is a rebuild of
-    // the same tag; a new RHEL or JDK line is a major and stays on manual review.
+    // The Konflux PR build builds and tests the image. A digest update rebuilds the same
+    // tag; a new RHEL or JDK line is a major and stays manual.
     "matchManagers": ["dockerfile"],
     "matchUpdateTypes": ["digest", "patch", "minor"],
     "automerge": true,
     "groupName": "base images"
   },
   {
-    // Pins FROM lines to tag@sha256, so rebuilds of a tag arrive as digest PRs.
+    // Keep even when every FROM line is pinned: it pins the next image added.
     "matchManagers": ["dockerfile"],
     "pinDigests": true
   },
   {
-    // Regenerates the RPM lockfiles in the same PR as a base image update, so the
-    // Konflux build tests the new base with the RPMs resolved against it.
+    // Refreshes the RPM lockfiles in the base image PR, so the build tests both together.
+    // Don't edit the command: MintMaker runs it only on an exact allow-list match.
     "matchManagers": ["dockerfile"],
     "postUpgradeTasks": {
       "commands": ["refresh-rpm-lockfiles -f \"$RENOVATE_POST_UPGRADE_COMMAND_DATA_FILE\""],
@@ -532,7 +514,6 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     }
   },
 
-  // --- gomod: patch and minor, indirect dependencies included; majors and the toolchain stay manual
   {
     "matchManagers": ["gomod"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -540,23 +521,21 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "Go modules"
   },
   {
-    // Indirect dependencies stay on manual review.
-    // Its own PR: a member that never automerges would hold the group.
+    // No group: a member that never automerges would hold the whole group.
     "matchManagers": ["gomod"],
     "matchDepTypes": ["indirect"],
     "automerge": false,
     "groupName": null
   },
   {
-    // The toolchain line is every developer's compiler, not just CI's.
-    // Its own PR: a member that never automerges would hold the group.
+    // The toolchain is every developer's compiler, not just CI's.
+    // No group: a member that never automerges would hold the whole group.
     "matchManagers": ["gomod"],
     "matchDepTypes": ["toolchain"],
     "automerge": false,
     "groupName": null
   },
 
-  // --- npm: patch and minor; majors, packageManager and engines stay manual
   {
     "matchManagers": ["npm"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -564,7 +543,6 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "npm dependencies"
   },
   {
-    // Development dependencies only: the runtime dependency list never changes unattended.
     "matchManagers": ["npm"],
     "matchDepTypes": ["devDependencies"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -572,15 +550,14 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "npm dependencies"
   },
   {
-    // packageManager and engines pin every developer's tools, not just CI's.
-    // Its own PR: a member that never automerges would hold the group.
+    // These pin every developer's tools, not just CI's.
+    // No group: a member that never automerges would hold the whole group.
     "matchManagers": ["npm"],
     "matchDepTypes": ["packageManager", "engines"],
     "automerge": false,
     "groupName": null
   },
 
-  // --- python: patch and minor; majors stay manual
   {
     "matchManagers": ["pip_requirements", "pip_setup", "pipenv", "poetry", "pep621"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -588,7 +565,6 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "Python dependencies"
   },
 
-  // --- cargo: patch and minor; majors stay manual
   {
     "matchManagers": ["cargo"],
     "matchUpdateTypes": ["patch", "minor"],
@@ -596,59 +572,66 @@ The `groupName` lines are the batching of Step 10, written below for one PR per 
     "groupName": "Cargo dependencies"
   },
 
-  // --- bundler: patch and minor; majors stay manual
   {
     "matchManagers": ["bundler"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true,
     "groupName": "Bundler dependencies"
-  },
+  }
+]
+```
 
-  // manual review, any manager
+The manual-review rule, once per package, any manager. For a candidate, the first comment line is the candidate's line from the report, from the name to the link, as in `// Quarkus follows an LTS track, so a reviewer picks the target version: https://quarkus.io/releases/`; a package the user typed has no such line.
+
+```jsonc
   {
-    // <the candidate's line from the report, name first: Quarkus follows an LTS track, so a reviewer picks the target version. https://quarkus.io/releases/>
-    // Its own PR: a member that never automerges would hold the group.
+    // <the candidate's line from the report>
+    // No group: a member that never automerges would hold the whole group.
     "matchManagers": ["<manager>"],
     "matchPackageNames": ["<pattern>"],
     "automerge": false,
     "groupName": null
   },
+```
 
-  // majors of named packages, any manager
+The majors rule, for packages whose majors may merge, any manager:
+
+```jsonc
   {
-    // Majors of these packages merge too: <the user's reason>. CI is the only gate.
+    // Majors merge too: <the user's reason>.
     "matchManagers": ["<manager>"],
     "matchPackageNames": ["<package>", "<package>"],
     "matchUpdateTypes": ["major"],
     "automerge": true
   },
+```
 
-  // allow-list width, any manager
+The allow-list rule, for a scope limited to named packages, any manager:
+
+```jsonc
   {
-    // Only these packages merge on their own; the rest of <manager> stays manual.
     "matchManagers": ["<manager>"],
     "matchPackageNames": ["<package>", "<package>"],
     "matchUpdateTypes": ["patch", "minor"],
     "automerge": true,
     "groupName": "<the group name of its manager's block>"
-  }
-]
+  },
 ```
 
 How the answers map to the blocks:
 
 - Toolchains: the wrapper rules, the gomod toolchain rule and the npm packageManager rule are the toolchain rules; they stay as written when the user kept them manual or the step was skipped, and they stand whatever the scope of their manager, an allow-list included, since the file says what was decided.
-  When the user opted in, each toolchain rule of a manager the report found becomes `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with `// CI builds with the new toolchain on every PR.` in place of its comment lines, one or two, and `"groupName": null` kept where the rule has it, since an opted-in toolchain still gets a PR of its own; the separator lines say the toolchain merges.
+  When the user opted in, each toolchain rule of a manager the report found becomes `"matchUpdateTypes": ["patch", "minor"], "automerge": true`, with `// CI builds with the new toolchain on every PR.` in place of its comment lines, one or two, and `"groupName": null` kept where the rule has it, since an opted-in toolchain still gets a PR of its own.
   Its `matchDepTypes` list stays as written: `engines` stays next to `packageManager` even when the report lists no engines pin, since the rule describes the policy, not the repo's current files.
-- Manual-review packages: the "manual review" block once per candidate kept or package named, after the rule of its manager, with the pattern and comment the report gives for a candidate, under the manager whose files hold it.
-  A package the user typed gets the managers whose files hold it and the comment `// Named during setup: stays on manual review whatever the update type.`
-  Candidates folded into one menu option still get one rule each; none when the user chose none, and the separator line then names no packages.
-- Base images: drop the `pinDigests` rule only when the user kept tags only, never because the images are already pinned, since an image added later on a bare tag gets its pin PR from it; drop the automerge rule when they kept base images manual, and the separator line then says so.
+- Manual-review packages: the manual-review rule once per candidate kept or package named, after the rule of its manager, with the pattern and comment the report gives for a candidate, under the manager whose files hold it.
+  A package the user typed gets the managers whose files hold it, and the no-group line as its only comment.
+  Candidates folded into one menu option still get one rule each; none when the user chose none.
+- Base images: drop the `pinDigests` rule only when the user kept tags only, never because the images are already pinned, since an image added later on a bare tag gets its pin PR from it; drop the automerge rule when they kept base images manual.
 - RPM lockfiles: the RPM block of the skeleton carries the answer, and nothing is written for it when they were kept manual.
   The `postUpgradeTasks` rule of the dockerfile block is written only when Step 7 chose to automerge every RPM refresh and the report's `rpm_refresh_on_base_image` says no; it stands whatever the base images answer, since a base image PR that needs review gets the matching lockfile as well, and it is dropped in every other case, so a base image PR never carries an RPM change the user kept manual.
   Copy its `commands` and `dataFileTemplate` strings exactly: the command must match MintMaker's `allowedCommands` character for character, or MintMaker refuses to run it.
-- Go: drop the indirect rule when the user automerges indirect dependencies; the separator line says whether they are included.
-- npm: copy exactly one of the two scope rules, then the packageManager rule; the allow-list width is the "allow-list width" block with `npm` as the manager.
+- Go: drop the indirect rule when the user automerges indirect dependencies.
+- npm: copy exactly one of the two scope rules, then the packageManager rule; the allow-list width is the allow-list rule with `npm` as the manager.
 - Python: keep only the managers the report detected.
 - Majors: one block per manager; for GitHub Actions use `matchDepNames` instead of `matchPackageNames`.
   The user's reason from the follow-up is the comment. No `groupName`: majors stay in PRs of their own.
@@ -698,6 +681,7 @@ After the "Write the files" answer, and only then, the write phase, in this orde
 
 1. Build the config file, or edit the existing one, rename it when Step 3 said so, drop every ⚠️ row of the Step 3 table, and show the diff.
    When migrating an existing config, list what you removed or restructured and why, so a rewrite never quietly drops a rule the user still wants.
+   Then run the report's `check_comments` script as `<check_comments> <config file>`, here and never earlier; there is nothing to read in it first. It prints every comment that is not a template word for word, with its line number: replace each with its block's comment, drop it when the block has none, or, when it belongs to a setting kept from the existing config, write that setting's marker line above it. Run it again until it prints nothing.
 2. Apply the Step 12 decisions: remove or narrow `dependabot.yml`, remove the base-image workflow, and update any doc that describes what they covered.
    Files those tools wrote, such as a digest tracking file, go with the workflow that wrote them; say so in one line.
 3. Check the names.
