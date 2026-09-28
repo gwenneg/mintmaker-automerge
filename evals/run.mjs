@@ -345,6 +345,16 @@ async function runFixture(name) {
         for (const s of expect.configLacks ?? []) check(!body.includes(squash(s)), `${expect.config} still contains ${JSON.stringify(s)}`);
         // The skill's placeholders are uppercase; a Renovate template such as {{#each upgrades}} is content.
         check(!/<[a-z-]+>|\{\{[A-Z_]+\}\}/.test(raw), `${expect.config} has an unfilled placeholder`);
+        // Every comment of the plugin's part of the file is one of its templates, word for word.
+        // A PLUGIN_DIR checkout from before the check has no script: nothing to check there.
+        const checker = path.join(pluginDir, "skills/setup/scripts/check-comments.sh");
+        if (fs.existsSync(checker)) {
+          try {
+            execFileSync(checker, [cfgPath], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+          } catch (e) {
+            check(false, `${expect.config} has comments that are not templates:\n          ${String(e.stdout || e.stderr || e.message).trim().split("\n").join("\n          ")}`);
+          }
+        }
       }
     }
     const wfDir = path.join(repo, ".github/workflows");

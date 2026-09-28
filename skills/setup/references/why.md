@@ -16,10 +16,9 @@ repo config, and it tracks `main` while the docs say the deployment "may
 use a configuration from a specific commit". Older configs often have the
 line because early examples did; that is history, not a reason.
 
-The header comment replaces it: it names what is inherited, how the merge
-works, and where the global config and the docs live. The merge rules in it
-come from Renovate's option definitions: `packageRules` and manager blocks
-are mergeable, `enabledManagers` is not.
+The header comment replaces it with a link to the global config. The merge
+itself follows Renovate's option definitions: `packageRules` and manager
+blocks are mergeable, `enabledManagers` is not.
 
 ## No `baseBranchPatterns`
 
@@ -55,8 +54,8 @@ the merge waits. That needs `internalChecksFilter` set to `none` or
 
 Setting the value again in the repo is redundant at best and, if MintMaker
 changes its value, silently out of sync at worst. The same goes for quoting
-the value in a comment of the generated file, which is why the header names
-the setting and links to the global config instead.
+the value in a comment of the generated file, which is why the header only
+links to the global config.
 
 The one limit: with `timestamp-optional`, Renovate's docs say it "will
 treat a release without a releaseTimestamp as stable". A release whose

@@ -112,46 +112,34 @@ names in it:
 
 ```jsonc
 // Set up with the MintMaker Automerge plugin v0.8.0: https://github.com/gwenneg/mintmaker-automerge
+// Overrides MintMaker's global config: https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  // Renovate overrides for this repository. MintMaker merges them on top of its
-  // global config, which sets the managers, the release-age delay, the
-  // vulnerability alerts, branch naming and PR limits:
-  // https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
-  // A key set here replaces the inherited value; packageRules are added to the
-  // inherited ones; enabledManagers would replace the whole list, so it is never set.
-  // Policy: patch and minor updates of the ecosystems below merge on their own once
-  // the required checks pass. Majors stay on manual review unless a rule names them.
-  // MintMaker docs: https://konflux-ci.dev/docs/mintmaker/user/
-  // Renovate merges each PR itself, on the first run where GitHub allows the merge:
-  // GitHub's auto-merge feature never completes when a bypass actor is what satisfies
-  // the approval rule, so it stays off.
+  // GitHub auto-merge never completes when a bypass actor meets the approval rule.
+  // Renovate merges instead, on the first run where GitHub allows it.
   "platformAutomerge": false,
-  // Every check on the PR must be green first, required or not.
   "ignoreTests": false,
   "extends": [
-    // Pins actions to commit SHAs, so a version bump can be told from a moved tag.
+    // Keep even when every action is pinned: it pins the next one added.
     "helpers:pinGitHubActionDigests"
   ],
   "tekton": {
-    // Konflux pipeline updates in .tekton/: the PR's own Konflux build tests them.
+    // The PR's own Konflux build runs the updated pipeline.
     "automerge": true,
     // Any day, instead of MintMaker's Saturday batch.
     "schedule": ["at any time"]
   },
   "packageRules": [
-    // --- github-actions: patch and minor of the actions named below, in one PR; majors, digest-only and every other action stay manual
     {
-      // A floating tag such as v4 never changes, so its releases arrive as digest PRs that
-      // never automerge. Pinning writes the full version once, in a manual PR, and later
-      // releases are patch or minor.
+      // Needed even when SHA-pinned: without it, a v4-style tag gets only digest PRs, which
+      // never automerge. Expect one manual PR that writes the full version.
       "matchManagers": ["github-actions"],
       "matchDepTypes": ["action"],
       "rangeStrategy": "pin"
     },
     {
-      // Vetted by name: an action runs arbitrary code in CI. Patch and minor only, so a
-      // moved tag with no version change, the shape of a hijacked action, never merges alone.
+      // Named actions only: an action runs code in CI. Digest-only updates stay manual:
+      // a moved tag with no version change is what a hijacked action looks like.
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["patch", "minor"],
       "matchDepNames": ["actions/checkout", "actions/setup-java"],
@@ -159,7 +147,6 @@ names in it:
       "groupName": "GitHub Actions"
     },
 
-    // --- maven: patch and minor, in one PR; majors, io.quarkus* and the wrapper stay manual
     {
       "matchManagers": ["maven"],
       "matchUpdateTypes": ["patch", "minor"],
@@ -172,8 +159,8 @@ names in it:
       "automerge": false
     },
     {
-      // Quarkus follows an LTS track, so a reviewer picks the target version. https://quarkus.io/releases/
-      // Its own PR: a member that never automerges would hold the group.
+      // Quarkus follows an LTS track, so a reviewer picks the target version: https://quarkus.io/releases/
+      // No group: a member that never automerges would hold the whole group.
       "matchManagers": ["maven"],
       "matchPackageNames": ["io.quarkus*"],
       "automerge": false,
