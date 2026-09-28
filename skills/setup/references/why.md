@@ -98,6 +98,16 @@ Renovate changes that default or MintMaker sets a delay inside its
 Actions run arbitrary code in CI, with whatever the workflow's token and
 secrets can reach, so each one is vetted by name with `matchDepNames`.
 
+The name is always `owner/repo`, never with the subpath a monorepo action
+adds: the github-actions manager's `depName` drops it
+(`lib/modules/manager/github-actions/extract.ts`, `packageName = owner/repo`).
+A repo that calls `github/codeql-action/init`, `/autobuild` and `/analyze`
+still allow-lists one name, `github/codeql-action`; the detect script
+collapses all three `uses:` lines to it in the table for the same reason.
+Seen on notifications-backend in September 2026: an earlier plugin version
+put each subpath in `matchDepNames`, none of which ever matched, so the
+allow-list rule silently automerged nothing for that action.
+
 The allow-list only protects SHA-pinned actions. With
 `uses: owner/action@<sha> # v1.2.3`, Renovate proposes a `digest` update when
 the tag is moved to another commit, and the patch/minor filter keeps that

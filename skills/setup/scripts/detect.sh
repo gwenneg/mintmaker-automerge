@@ -308,9 +308,13 @@ if list "$ACTIONFILES" >/dev/null; then
   ACTIONS=$(list "$ACTIONFILES" | while read -r wf; do grep -h -E '^[[:space:]]*-?[[:space:]]*uses:' "$wf"; done | awk '
     { sub(/^[[:space:]]*-?[[:space:]]*uses:[[:space:]]*/, ""); gsub(/["'"'"']/, "", $1)
       if ($1 ~ /^(\.\/|docker:\/\/)/) next
-      split($1, a, "@"); name=a[1]; r=a[2]
+      split($1, a, "@"); full=a[1]; r=a[2]
       style = (r ~ /^[0-9a-f]{40}$/ || r ~ /^[0-9a-f]{64}$/) ? ($2 == "#" ? "sha+version-comment" : "sha-no-comment") : "tag"
-      if (name ~ /\.github\/workflows\//) style = "reusable-workflow " style
+      if (full ~ /\.github\/workflows\//) style = "reusable-workflow " style
+      # Renovate depName drops any subpath (owner/repo/path -> owner/repo), so a
+      # multi-action repo like github/codeql-action must collapse to one name here:
+      # a matchDepNames entry with the subpath still attached never matches anything.
+      split(full, seg, "/"); name = seg[1] "/" seg[2]
       c[name " " style]++ }
     END { for (k in c) print k, c[k] }' | sort)
 fi

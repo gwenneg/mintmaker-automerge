@@ -703,6 +703,7 @@ After the "Write the files" answer, and only then, the write phase, in this orde
 3. Check the names.
    The validator workflow below checks syntax and schema only: a misspelled package or action name passes and silently matches nothing.
    Compare every name in the rules against the files and workflows of the scan yourself, and say `Written, every name checked against the repo.`
+   For github-actions, a name is `owner/repo` only: Renovate drops any subpath, so a monorepo action used as `owner/repo/init` and `owner/repo/analyze`, such as `github/codeql-action`, is still one entry, `owner/repo`, however many subpaths the workflow uses. A name with a subpath still attached, table-derived or typed by the user, matches nothing and fails this check.
 4. The validator workflow, below.
 
 A bad edit to the Renovate config otherwise surfaces only when MintMaker chokes on it; there is no local build step.
