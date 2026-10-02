@@ -68,12 +68,15 @@
     "dockerfile",
     "enabledManagers",
     "\"ignoreTests\": true",
-    "rebaseWhen"
+    "rebaseWhen",
+    "minimumConfidence",
+    "matchConfidence"
   ],
   "answers": {},
   "defaultBranch": "master",
   "textContains": [
-    "whenever `master` moves"
+    "whenever `master` moves",
+    "Merge Confidence features"
   ],
   "textLacks": [
     "the reply opens with",

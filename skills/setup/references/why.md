@@ -27,6 +27,14 @@ Konflux component tracks. Renovate also defaults to the repo's default
 branch. A repo-level value repeats that at best; on a component that tracks
 `master` or a release branch, it points Renovate at the wrong branch.
 
+## No `minimumConfidence` or `matchConfidence`
+
+MintMaker does not support Renovate's Merge Confidence features. Without
+them, Renovate rates every update `neutral`: a `minimumConfidence` above
+that holds every update it covers on a pending
+`renovate/merge-confidence` check forever, and a `matchConfidence` rule
+fails config validation, which stops Renovate on the repository.
+
 ## No `minimumReleaseAge`
 
 MintMaker's global config sets `minimumReleaseAge` to 3 days (at the time

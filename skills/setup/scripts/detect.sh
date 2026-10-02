@@ -285,6 +285,8 @@ if [ -n "$found" ]; then
           if (p !~ /konflux-ci\/mintmaker\/\/config/) r("extends preset " p, "read and reported below")
         } }
       $0 ~ key("baseBranchPatterns|baseBranches") { r("`baseBranchPatterns`", "⚠️ removed, MintMaker sets it per Konflux component") }
+      $0 ~ key("minimumConfidence") { r("`minimumConfidence`", "⚠️ removed, MintMaker does not support Renovate'"'"'s Merge Confidence features") }
+      $0 ~ key("matchConfidence") { r("`matchConfidence` rule", "⚠️ rule removed, MintMaker does not support Renovate'"'"'s Merge Confidence features") }
       $0 ~ key("minimumReleaseAge") { r("`minimumReleaseAge`", "⚠️ redundant, MintMaker sets it globally; removed") }
       $0 ~ key("enabledManagers") { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
       $0 ~ key("platformAutomerge") { r("`platformAutomerge`", "⚠️ replaced by false: GitHub'"'"'s auto-merge never completes when a bypass actor meets the approval rule") }

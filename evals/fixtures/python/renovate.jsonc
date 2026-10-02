@@ -6,6 +6,16 @@
       // Gunicorn is pinned by the platform team, bump it by hand.
       "matchPackageNames": ["gunicorn"],
       "enabled": false
+    },
+    {
+      "matchManagers": ["pep621"],
+      "matchConfidence": ["high", "very high"],
+      "automerge": true
+    },
+    {
+      "matchManagers": ["tekton"],
+      "minimumConfidence": "neutral"
     }
-  ]
+  ],
+  "minimumConfidence": "high"
 }

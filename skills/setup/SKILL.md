@@ -681,6 +681,7 @@ After the "Write the files" answer, and only then, the write phase, in this orde
 
 1. Build the config file, or edit the existing one, rename it when Step 3 said so, drop every ⚠️ row of the Step 3 table, and show the diff.
    When migrating an existing config, list what you removed or restructured and why, so a rewrite never quietly drops a rule the user still wants.
+   A rule holding `matchConfidence` goes whole, since without its matcher it would apply to more than it was written for; a rule left with nothing but matchers once a ⚠️ key is gone goes too.
    Then run the report's `check_comments` script as `<check_comments> <config file>`, here and never earlier; there is nothing to read in it first. It prints every comment that is not a template word for word, with its line number: replace each with its block's comment, drop it when the block has none, or, when it belongs to a setting kept from the existing config, write that setting's marker line above it. Run it again until it prints nothing.
 2. Apply the Step 12 decisions: remove or narrow `dependabot.yml`, remove the base-image workflow, and update any doc that describes what they covered.
    Files those tools wrote, such as a digest tracking file, go with the workflow that wrote them; say so in one line.
@@ -763,6 +764,7 @@ When Step 9 skipped the checks in Renovate, the second sentence reads `Renovate 
 A setting whose verdict opened with ✅ was not asked about: its item ends with `already in place` instead of the `read, understood, to be ...` clause.
 A box stays unticked when its step ended without the "I read it" answer, and the body names what is still open.
 When Step 10 chose to rebase only on conflict, one more paragraph before the attribution line: `PRs are rebased only on conflict, by choice: a PR merges as tested against the base it was opened on, and a broken combination shows on the \`<default_branch>\` build. The \`keep-updated\` label puts one PR back on rebase-when-behind.`
+When the Step 3 table removed `minimumConfidence` or a `matchConfidence` rule, one more paragraph before the attribution line, naming what was removed: `Removed \`minimumConfidence\`: MintMaker does not support Renovate's Merge Confidence features.`
 When Step 2 printed a how-to, one more paragraph before the attribution line: `MintMaker is being disabled on <branch> by annotating its Konflux component(s) <components>, by hand: the rules in this file stop applying there once it is.`
 The body ends with the attribution line, verbatim:
 
