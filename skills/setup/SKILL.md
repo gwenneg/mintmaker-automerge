@@ -2,7 +2,7 @@
 name: setup
 description: Turns on Renovate automerge for low-risk dependency updates in a Konflux-onboarded repository, one decision at a time, and documents the GitHub branch-protection changes it needs. Run it from the repository with /mintmaker-automerge:setup.
 disable-model-invocation: true
-model: sonnet
+model: claude-sonnet-5
 allowed-tools:
   - Bash(${CLAUDE_SKILL_DIR}/scripts/detect.sh)
   - Bash(${CLAUDE_SKILL_DIR}/scripts/version.sh)
