@@ -293,31 +293,36 @@ shared preset section below. The rule is written only when every RPM
 refresh automerges: otherwise an automerged base image PR would carry an
 RPM change the user chose to review. https://github.com/konflux-ci/refresh-rpm-lockfiles
 
-## Why GitHub's auto-merge feature is off, and what the gate choice means
+## Why GitHub's auto-merge feature does the merging, and what the required checks mean
 
-The generated file sets `platformAutomerge: false`. With the default,
-Renovate asks GitHub to enable its auto-merge feature on each PR it opens, and
-GitHub never completes that merge when the approval rule of the base
-branch is satisfied only by a bypass actor, which is exactly how the
-Konflux app merges without a human. The PR stays blocked with every check
-green. Reported since January 2025 on rulesets and classic protection
-alike, acknowledged by GitHub in March 2026, unfixed in September 2026;
-`references/github-branch-protection.md` has the dated sources. Renovate's
-own merge goes through the merge endpoint, which honors the bypass, so the
-skill turns the feature off and the "Allow auto-merge" repository
-setting no longer matters.
+The generated file sets `platformAutomerge: true`, Renovate's default,
+written out so a config from an earlier version of the plugin, which set
+it to false, shows the change in the Step 3 table. Renovate then asks
+GitHub to arm its auto-merge feature on each PR it opens, and GitHub
+merges the PR the moment the branch rules allow it: minutes after the
+required checks pass, on any run or none. Renovate's own merge still runs
+as a fallback, on the next run where the branch got no new commit and
+every check on it is green (`lib/workers/repository/update/branch/index.ts`
+calls `checkAutoMerge` whatever `platformAutomerge` says), so a repository
+whose exemption is not applied yet still merges, one PR per run, as the
+plugin's earlier versions did.
 
-That merge waits for every check on the PR's head commit, required or
-not. Step 9 makes this explicit as the recommended gate: keep the checks,
-and Renovate merges only when 100% of them pass. The alternative,
-`ignoreTests: true`, makes
-Renovate ask for the merge without reading any check, so the required
-checks of the base branch are the whole gate and a non-required scanner
-that stays red never holds a merge. It is offered as the risky option,
-for repositories where a check can turn red for reasons outside the PR,
-because with no required check a PR then merges on red CI. Which
-checks are required is decided in Step 9, right after the choice, and the PR body says the gate
-is the whole gate when this option was chosen.
+GitHub's auto-merge does not honor a bypass actor in the "Always allow" or
+"For pull requests only" modes: the PR stays blocked with every check
+green. It honors the Exempt mode, since an exempt actor is never asked for
+the approval at all. Both measured on a public test repository;
+`references/github-branch-protection.md` has the dated results. That is
+why Step 11 asks for Exempt and nothing else, and why the "Allow
+auto-merge" repository setting is back on the checklist: without it
+Renovate cannot arm the merge and falls back to its own.
+
+GitHub's auto-merge reads the required checks of the base branch and
+nothing else, so those checks are the whole gate, and Step 9 is where the
+user takes them on: a check that is not required never holds a merge, red
+or not, and with no required check a PR merges as soon as it opens. The
+`ignoreTests` option of earlier versions is gone with the choice it
+served: Renovate's own merge waits for every check on the PR, required or
+not, which only matters on the fallback path.
 
 ## Why the merge days are a `schedule`, not an `automergeSchedule`
 
@@ -431,26 +436,22 @@ forced block.
 
 ## Why the automerged updates are batched per ecosystem
 
-Renovate merges one PR per run. Its branch loop stops as soon as a branch
-was automerged, because the base branch changed under the list it computed
-at the start of the run (`lib/workers/repository/process/write.ts`, "Stop
-processing other branches because base branch has been changed"), and the
-repository job restarts once, never twice (`lib/workers/repository/index.ts`,
-"Restarting repository job after automerge result"). In the restarted pass
-every other open PR is behind the base branch, and `rebaseWhen: auto`
-resolves to `behind-base-branch` for a branch with automerge on and to
-`conflicted` for the others (`lib/workers/repository/update/branch/reuse.ts`),
-so every automerge PR is force-pushed and its checks rerun, while the PRs on
-manual review stay as they are until they conflict. MintMaker runs a repository every four hours, twice a day on busy Konflux
+Every merge moves the base branch, and `rebaseWhen: auto` resolves to
+`behind-base-branch` for a branch with automerge on and to `conflicted`
+for the others (`lib/workers/repository/update/branch/reuse.ts`), so on
+MintMaker's next run, every four hours, twice a day on busy Konflux
 clusters (the four-hour base schedule is in its docs, the busy-cluster
-cadence comes from the MintMaker operators), so a queue of single PRs drains at one merge per run while every
-merge, and every human push to the base branch, costs a rebuild of every
-open PR. Seen on a Go repository in September 2026: twenty open MintMaker
-PRs, the concurrent limit, fourteen of them green, one merge per run, and
-each of them force-pushed five to fifteen times, against zero to two for
-the major bumps on manual review.
+cadence comes from the MintMaker operators), every other automerge PR is
+force-pushed and its checks rerun, while the PRs on manual review stay as
+they are until they conflict. Ten single PRs are ten merges and ten
+rounds of rebuilds; when the branch rules require branches to be up to
+date, they are also ten MintMaker runs, since a behind PR cannot merge
+before its rebase. Seen on a Go repository in September 2026: twenty open
+MintMaker PRs, the concurrent limit, fourteen of them green, and each of
+them force-pushed five to fifteen times, against zero to two for the major
+bumps on manual review.
 
-A group PR lands every member in that one merge. The skill groups per
+A group PR lands every member in one merge. The skill groups per
 ecosystem by default, one `groupName` per automerge rule, so a red Go
 build holds the Go group and nothing else. Renovate's noise-reduction docs
 name the cost: a group that "breaks" waits until every member passes, and
@@ -475,42 +476,33 @@ since `internalChecksFilter: strict` filters per dependency at lookup. When
 a new member joins, the group branch gets a new commit and its checks
 rerun, so the merge waits for the next run.
 
-## Why rebasing on every move is the default, and what rebasing only on conflict costs
+## Why the config says nothing about rebasing
 
-Renovate's `rebaseWhen` docs say `conflicted` "is not recommended if you
-have enabled Renovate automerge", for two reasons: two updates merged one
-after another are never tested together, so the base branch can break, and
-a rule that requires branches to be up to date makes automerge impossible
-for a branch that is behind but not conflicted. The automerge concepts page
-adds the design behind the default: after a merge Renovate recomputes the
-state of every remaining branch, wants each one up to date before it
-merges, and merges one per run because merging several in a row "does not
-work reliably". The recommended answer keeps that: every merge is tested
-against the branch it lands on.
+Earlier versions asked whether to rebase an open PR whenever the base
+branch moves or only on conflict, and wrote `rebaseWhen: conflicted` for
+the second answer. With GitHub doing the merging the question is moot:
+Renovate's `platformAutomerge` docs say GitHub "might automerge a Renovate
+branch even if it's behind the base branch at the time", so a green PR
+merges before Renovate's next run gets to rebase it, whatever `rebaseWhen`
+says. What decides whether every merge is tested against the branch it
+lands on is GitHub's own rule, "Require branches to be up to date before
+merging", in the checks ruleset. With it, a behind PR waits for Renovate's
+next run to rebase it and rerun its checks, so merges land one MintMaker
+run apart; without it, a green PR merges within minutes, as tested against
+the base it was opened on, the case Renovate's `rebaseWhen` docs warn
+about for `conflicted`. The rule applies to every PR on the branch, human
+ones included, so the plugin neither asks for it nor recommends it: the
+scan reads it as `up_to_date_required`, and the Step 10 tip says what the
+current setting means for the merges. `rebaseWhen` itself stays out of the
+file: `auto` already resolves to `behind-base-branch` under automerge, and
+`conflicted` would leave a behind PR unrebased, and unmergeable under the
+up-to-date rule. MintMaker's `tekton` and `lockFileMaintenance` blocks set
+`rebaseWhen: behind-base-branch` themselves.
 
-The other answer, `rebaseWhen: conflicted`, is offered because it removes
-the rebuild storm and the reset on every human push, and lets the restarted
-pass merge a second green PR. It works on GitHub because Renovate's PR
-automerge checks conflicts, the branch status and whether someone else
-pushed, never whether the branch is behind (`lib/workers/repository/update/pr/automerge.ts`;
-the "cannot merge" reason it also checks is set by the Gitea platform
-only), and GitHub allows a merge of a behind branch unless a rule requires
-branches to be up to date. The cost is the first reason above: a PR merges
-as tested against the base it was opened on, like a human merge without
-"Update branch", and a broken combination shows on the base branch's build
-instead of on the PR. The scan reads the rulesets' `strict_required_status_checks_policy`, GitHub's
-"Require branches to be up to date before merging", and reports it as
-`up_to_date_required`; when it is set, the skill withholds the option,
-since a behind branch that does not conflict could never merge. The
-skill writes the `keepUpdatedLabel` option next
-to it, Renovate's per-PR way back to `behind-base-branch`, and says so in
-the summary and the PR body. MintMaker's `tekton` and `lockFileMaintenance`
-blocks set `rebaseWhen: behind-base-branch` themselves, and a manager block
-wins over the top-level key, so pipeline updates and lockfile refreshes
-keep rebasing whatever the answer.
-
-A merge queue would give both, retesting and throughput, and Renovate
-resolves `rebaseWhen: auto` to `conflicted` behind one for that reason. It
-is out of reach on a branch that requires an approval: the queue never
-admits a PR whose approval is satisfied by a bypass actor, see
-`references/github-branch-protection.md`.
+A merge queue would give retesting and throughput at once, and GitHub's
+queue admits a PR armed by an exempt actor, measured on the test
+repository. The plugin does not set one up: the queue runs the checks on
+a `merge_group` event, and Pipelines-as-Code, which runs the Konflux PR
+pipeline, has no handler for that event (none in its source as of
+2026-10-08), so the queue would wait on a required check that never
+comes.

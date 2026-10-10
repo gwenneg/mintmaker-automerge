@@ -29,13 +29,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
+      "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -69,8 +66,7 @@
         "help me understand",
         "I read it"
       ]
-    },
-    "Rebasing": "only on conflict"
+    }
   },
   "files": {
     "renovate.json": {
@@ -102,8 +98,7 @@
   },
   "textContains": [
     "directory missing",
-    "alerts",
-    "Rebasing: only on conflict"
+    "alerts"
   ],
   "configContains": [
     "\"matchManagers\": [\"bundler\"]",
@@ -112,11 +107,8 @@
     "actions/checkout",
     "\"matchManagers\": [\"dockerfile\"]",
     "\"tekton\"",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "\"groupName\": \"Bundler dependencies\"",
-    "\"rebaseWhen\": \"conflicted\"",
-    "\"keepUpdatedLabel\": \"keep-updated\""
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "helpers:pinGitHubActionDigests",
@@ -125,7 +117,10 @@
     "composer",
     "pinDigests",
     "\"ignoreTests\": true",
-    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}"
+    "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
+    "ignoreTests",
+    "rebaseWhen",
+    "keepUpdatedLabel"
   ],
   "textLacks": [
     "the reply opens with",

@@ -53,11 +53,13 @@ say "github_repo: ${slug:-unknown} (the repository the GitHub settings and the P
 say "origin_repo: ${origin_slug:-unknown}"
 if [ "$fork" = yes ]; then say "fork: yes (origin is a fork of github_repo, found via $fork_via; the PR branch is pushed to origin, the PR opened on github_repo)"; else say "fork: no"; fi
 if ! command -v gh >/dev/null 2>&1; then why="gh is not installed"; elif [ "$HAVE_GH" != yes ]; then why="gh is not logged in"; elif [ -z "$slug" ]; then why="no GitHub remote"; else why="gh cannot read the repository"; fi
-role="not checked, $why"; otype=""; api_db=""
-if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch' 2>/dev/null); then
-  set -- $repo_facts; role=$1; otype=${2:-}; api_db=${3:-}
+role="not checked, $why"; otype=""; api_db=""; aam=""
+if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && repo_facts=$(gh api "repos/$slug" --jq '(if .permissions == null then "unknown" else (.permissions | if .admin then "admin" elif .maintain then "maintain" elif .push then "write" else "read" end) end) + " " + .owner.type + " " + .default_branch + " " + (.allow_auto_merge | tostring)' 2>/dev/null); then
+  set -- $repo_facts; role=$1; otype=${2:-}; api_db=${3:-}; aam=${4:-}
 fi
 say "github_role: $role (the role of the gh login on this repository; rulesets take admin)"
+case "$aam" in true) aam_word=yes ;; false) aam_word=no ;; *) aam_word="not checked" ;; esac
+say "allow_auto_merge: $aam_word (the repository setting Renovate needs to arm GitHub's auto-merge on a PR)"
 
 db=""
 if [ "$fork" = yes ]; then
@@ -74,7 +76,7 @@ say "== Branch rules (Steps 9 and 11: the rulesets on the default branch, read w
 KONFLUX_APP_ID=296509
 br=""; checks_id=""; pr_id=""
 if [ -n "$slug" ] && [ "$HAVE_GH" = yes ] && [ -n "$db" ]; then
-  br=$(gh api "repos/$slug/rules/branches/$db" --jq '([.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(", ")), ([.[] | select(.type=="required_status_checks") | .ruleset_id] | unique | map(tostring) | join(" ")), ([.[] | select(.type=="pull_request") | "\(.ruleset_id):\(.parameters.required_approving_review_count)"] | join(" ")), ([.[] | select(.type=="required_status_checks") | .parameters.strict_required_status_checks_policy] | any)' 2>/dev/null) && br="ok
+  br=$(gh api "repos/$slug/rules/branches/$db" --jq '([.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context] | join(", ")), ([.[] | select(.type=="required_status_checks") | .ruleset_id] | unique | map(tostring) | join(" ")), ([.[] | select(.type=="pull_request") | "\(.ruleset_id):\(.parameters.required_approving_review_count)"] | join(" ")), ([.[] | select(.type=="required_status_checks") | .parameters.strict_required_status_checks_policy] | any), ([.[] | select(.type=="non_fast_forward") | .ruleset_id] | unique | map(tostring) | join(" "))' 2>/dev/null) && br="ok
 $br"
 fi
 if [ -z "$br" ]; then
@@ -82,52 +84,61 @@ if [ -z "$br" ]; then
   say "up_to_date_required: not checked"
 else
   checks=$(printf '%s\n' "$br" | sed -n 2p); check_rs=$(printf '%s\n' "$br" | sed -n 3p); pr_rs=$(printf '%s\n' "$br" | sed -n 4p)
-  checks_id=${check_rs%% *}; pr_id=${pr_rs%% *}; pr_id=${pr_id%%:*}; strict=$(printf '%s\n' "$br" | sed -n 5p)
+  checks_id=${check_rs%% *}; pr_id=${pr_rs%% *}; pr_id=${pr_id%%:*}; strict=$(printf '%s\n' "$br" | sed -n 5p); ff_rs=$(printf '%s\n' "$br" | sed -n 6p)
   say "required_checks: ${checks:-none}"
-  say "up_to_date_required: $([ "$strict" = true ] && printf yes || printf no) (the rule that a PR branch must be up to date before merging; with yes, rebasing only on conflict would stop every automerge PR, since Renovate never rebases a branch that is behind but not in conflict)"
+  say "up_to_date_required: $([ "$strict" = true ] && printf yes || printf no) (the rule that a PR branch must be up to date before merging; with yes, a PR behind the branch waits for MintMaker's next run to rebase it before GitHub can merge it, which picks the Step 10 tip)"
   rsname() { gh api "repos/$slug/rulesets/$1" --jq .name 2>/dev/null; }
   rsbypass() { gh api "repos/$slug/rulesets/$1" --jq "[.bypass_actors[]? | select(.actor_type==\"Integration\" and .actor_id==$KONFLUX_APP_ID) | .bypass_mode] | join(\",\")" 2>/dev/null; }
-  [ -z "$pr_rs" ] && say "approval_rule: none (no pull request rule on $db, nothing to bypass)"
-  bypass_rs=""; both=no; need_approval=no; ap_name=""; ap_n=0; ap_bypass=""; ap_holds=no
+  rsother() { gh api "repos/$slug/rulesets/$1" --jq '[.rules[].type | select(. != "pull_request")] | join(", ")' 2>/dev/null; }
+  [ -z "$pr_rs" ] && say "approval_rule: none (no pull request rule on $db, nothing to exempt the app from)"
+  bypass_rs=""; need_approval=no; ap_name=""; ap_n=0; ap_bypass=""; ap_other=""
   for e in $pr_rs; do
-    id=${e%%:*}; n=${e#*:}; name=$(rsname "$id"); holds=no
-    case " $check_rs " in *" $id "*) holds=yes ;; esac
-    say "approval_rule: $n approval(s), ruleset \"$name\", also holds the required checks: $holds"
+    id=${e%%:*}; n=${e#*:}; name=$(rsname "$id"); other=$(rsother "$id")
+    say "approval_rule: $n approval(s), ruleset \"$name\", other rules in it: ${other:-none}"
     b=$(rsbypass "$id")
     if [ -n "$b" ]; then
-      case "$b" in *always*) bl="always, wider than the For pull requests only mode the skill recommends" ;; pull_request) bl="For pull requests only" ;; *) bl=$b ;; esac
-      bypass_rs="${bypass_rs:+$bypass_rs; }\"$name\", mode: $bl"; [ "$holds" = yes ] && both=yes
+      case "$b" in *exempt*) bl="Exempt" ;; *always*) bl="Always allow" ;; pull_request) bl="For pull requests only" ;; *) bl=$b ;; esac
+      bypass_rs="${bypass_rs:+$bypass_rs; }\"$name\", mode: $bl"
     fi
-    if [ "$need_approval" = no ] && [ "$n" != 0 ] && [ "$n" != null ]; then need_approval=yes; ap_name=$name; ap_n=$n; ap_bypass=$b; ap_holds=$holds; fi
+    if [ "$need_approval" = no ] && [ "$n" != 0 ] && [ "$n" != null ]; then need_approval=yes; ap_name=$name; ap_n=$n; ap_bypass=$b; ap_other=$other; fi
   done
-  say "konflux_bypass: ${bypass_rs:-none} (Red Hat Konflux in the bypass list of a ruleset holding the pull request rule)"
-  say "konflux_bypasses_required_checks: $both"
+  say "konflux_bypass: ${bypass_rs:-none} (Red Hat Konflux in the bypass list of a ruleset holding the pull request rule; GitHub's auto-merge honors the Exempt mode only)"
+  ff_name=""
+  for id in $ff_rs; do b=$(rsbypass "$id"); case "$b" in *exempt*|*always*) ;; *) ff_name=$(rsname "$id"); break ;; esac; done
+  say "force_push_blocked: $([ -n "$ff_name" ] && printf 'yes, ruleset "%s"' "$ff_name" || printf 'no') (a Block force pushes rule on $db in a ruleset the app cannot bypass; an exempt app could otherwise rewind the branch)"
 fi
 
 SB=""
-say "== Settings status (Step 9 reads status_checks, Step 11 status_bypass; one verdict each, printed verbatim on the Currently lines)"
+SA=""
+say "== Settings status (Step 9 reads status_checks, Step 11 status_bypass and status_auto_merge; one verdict each, printed verbatim where the screens name them)"
 if [ -z "$br" ]; then
   say "status_checks: not checked, $why"
   SB="not checked, $why"; say "status_bypass: $SB"
 else
   if [ -z "$checks" ]; then say "status_checks: ⚠️ none, nothing gates the merge yet"; else say "status_checks: ✅ $(printf '%s' "$checks" | awk -F', ' '{print NF}') required, compare them with the guidance below"; fi
-  if [ "$need_approval" = no ]; then SB="✅ no approval rule on $db, nothing to do"; say "status_bypass: $SB"
+  if [ "$need_approval" = no ]; then SB="✅ no approval rule on $db, nothing to exempt the app from"; say "status_bypass: $SB"
   elif [ -z "$ap_bypass" ]; then SB="⚠️ The \`$db\` branch of this repository requires $ap_n approval(s) because of the ruleset \"$ap_name\", and Red Hat Konflux is not on its bypass list"; say "status_bypass: $SB"
   else
-    case "$ap_holds,$ap_bypass" in
-      yes,*always*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks, in Always allow mode"; say "status_bypass: $SB" ;;
-      yes,*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\", which also holds the required checks"; say "status_bypass: $SB" ;;
-      no,*always*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode, wider than needed"; say "status_bypass: $SB" ;;
-      *) SB="✅ Red Hat Konflux bypasses \"$ap_name\", For pull requests only, a ruleset without the required checks: in place"; say "status_bypass: $SB" ;;
+    case "$ap_bypass" in
+      *exempt*)
+        if [ -n "$ap_other" ]; then SB="⚠️ Red Hat Konflux is exempt from \"$ap_name\", which also holds $ap_other: the exemption skips those rules too"
+        elif [ -z "$ff_name" ]; then SB="⚠️ Red Hat Konflux is exempt from \"$ap_name\", and no ruleset the app cannot bypass blocks force pushes on \`$db\`"
+        else SB="✅ Red Hat Konflux is exempt from \"$ap_name\", a ruleset holding the pull request rule alone, and \"$ff_name\" blocks force pushes: in place"; fi ;;
+      *always*) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\" in Always allow mode, which GitHub's auto-merge ignores: the mode must be Exempt" ;;
+      *) SB="⚠️ Red Hat Konflux bypasses \"$ap_name\" in For pull requests only mode, which GitHub's auto-merge ignores: the mode must be Exempt" ;;
     esac
+    say "status_bypass: $SB"
   fi
 fi
+case "$aam" in true) SA="✅ on" ;; false) SA="⚠️ off" ;; *) SA="not checked, $why" ;; esac
+say "status_auto_merge: $SA"
 
 say "== Links (Steps 9 and 11: the GitHub pages where the settings live, built from the remote URL, no gh needed)"
 if [ -z "$slug" ]; then
   say "links: none (no GitHub remote)"
 else
   say "settings_rulesets: https://github.com/$slug/settings/rules"
+  say "settings_repo: https://github.com/$slug/settings (the \"Allow auto-merge\" checkbox, under Pull Requests)"
   [ -n "$checks_id" ] && say "settings_ruleset_checks: https://github.com/$slug/settings/rules/$checks_id (the ruleset holding the required checks)"
   [ -n "$pr_id" ] && say "settings_ruleset_approval: https://github.com/$slug/settings/rules/$pr_id (the ruleset holding the pull request rule)"
   say "settings_branches: https://github.com/$slug/settings/branches (classic branch protection rules)"
@@ -289,10 +300,10 @@ if [ -n "$found" ]; then
       $0 ~ key("matchConfidence") { r("`matchConfidence` rule", "⚠️ rule removed, MintMaker does not support Renovate'"'"'s Merge Confidence features") }
       $0 ~ key("minimumReleaseAge") { r("`minimumReleaseAge`", "⚠️ redundant, MintMaker sets it globally; removed") }
       $0 ~ key("enabledManagers") { r("`enabledManagers`", "⚠️ replaces MintMaker'"'"'s whole manager list; removed unless that was intended") }
-      $0 ~ key("platformAutomerge") { r("`platformAutomerge`", "⚠️ replaced by false: GitHub'"'"'s auto-merge never completes when a bypass actor meets the approval rule") }
-      $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ replaced by the Step 9 gate choice") }
-      $0 ~ key("rebaseWhen") { r("`rebaseWhen`", "⚠️ replaced by the Step 10 rebasing choice") }
-      $0 ~ key("keepUpdatedLabel") { r("`keepUpdatedLabel`", "⚠️ replaced by the Step 10 rebasing choice") }
+      $0 ~ key("platformAutomerge") { r("`platformAutomerge`", "⚠️ replaced by true: GitHub merges the PR as soon as its required checks pass, once the Konflux app is exempt from the approval rule") }
+      $0 ~ key("ignoreTests") { r("`ignoreTests`", "⚠️ removed: GitHub'"'"'s auto-merge reads the required checks only") }
+      $0 ~ key("rebaseWhen") { r("`rebaseWhen`", "⚠️ removed: Renovate rebases the automerge PRs by default, and GitHub merges them") }
+      $0 ~ key("keepUpdatedLabel") { r("`keepUpdatedLabel`", "⚠️ removed with `rebaseWhen`") }
       $0 ~ key("rpmVulnerabilityAutomerge") { r("`rpmVulnerabilityAutomerge`", "⚠️ replaced by the Step 7 RPM lockfiles choice, which offers to keep its threshold") }
       $0 ~ key("rpm-lockfile") { r("`rpm-lockfile` block", "kept; an `automerge` key in it is replaced by the Step 7 RPM lockfiles choice") }
       $0 ~ key("lockFileMaintenance") { r("`lockFileMaintenance`", "kept; an `automerge: true` in it merges every lockfile refresh, the RPM ones included, and Step 7 says so") }
@@ -530,7 +541,7 @@ if [ "$nbr" -le 1 ]; then skb=$(printf '%s\n' "$BRLINES" | awk '{print $2; exit}
 if [ -z "$TC" ]; then say "### ▶️ Step 5/14 Build toolchains"; say "Skipped: no build toolchain pinned in this repo."; say ""; n_sk=$((n_sk+1)); fi
 if [ "$WORKFLOWS_FOUND" != yes ]; then say "### ▶️ Step 6/14 GitHub Actions"; say "Skipped: no GitHub workflows in this repo."; say ""; n_sk=$((n_sk+1)); fi
 if [ -z "$BASES" ] && [ -z "$RPMS" ]; then say "### ▶️ Step 7/14 Base images"; say "Skipped: no container file or RPM lockfile in this repo."; say ""; n_sk=$((n_sk+1)); fi
-case "$SB" in ✅*) say "### ▶️ Step 11/14 Konflux app bypass"; say "Skipped: ${SB#✅ }."; say ""; n_sk=$((n_sk+1)) ;; esac
+case "$SB,$SA" in ✅*,✅*) say "### ▶️ Step 11/14 Konflux app exemption"; say "Skipped: ${SB#✅ }; \"Allow auto-merge\" is on."; say ""; n_sk=$((n_sk+1)) ;; esac
 if [ ! -f .github/dependabot.yml ] && [ -z "$ou" ]; then say "### ▶️ Step 12/14 Other updaters"; say "Skipped: no other updater in this repo."; say ""; n_sk=$((n_sk+1)); fi
 [ "$n_sk" -gt 0 ] || say "(none: every step has something to ask)"
 say "== Manual-review candidates (the first Never-automerge option of Step 4; one manual-review rule each, under the manager whose files hold the package)"

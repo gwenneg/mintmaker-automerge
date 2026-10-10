@@ -22,13 +22,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
+      "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -54,12 +51,11 @@
     "actions/checkout",
     "actions/setup-python",
     "\"tekton\"",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
     "\"groupName\": \"Python dependencies\"",
     "\"groupName\": \"GitHub Actions\"",
-    "\"groupName\": null"
+    "\"groupName\": null",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -70,12 +66,14 @@
     "\"ignoreTests\": true",
     "rebaseWhen",
     "minimumConfidence",
-    "matchConfidence"
+    "matchConfidence",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "answers": {},
   "defaultBranch": "master",
   "textContains": [
-    "whenever `master` moves",
+    "the `master` it was opened on",
     "Merge Confidence features"
   ],
   "textLacks": [

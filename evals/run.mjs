@@ -80,8 +80,8 @@ const STEP_OF = {
   "Pin actions": 6, "Allow-list": 6,
   "Base images": 7, "Pin base images": 7, "RPM lockfiles": 7,
   "Merge days": 8, Pipeline: 8,
-  "Merge gate": 9, "Gate checks": 9,
-  Batching: 10, Rebasing: 10,
+  "Gate checks": 9,
+  Batching: 10,
   Settings: 11,
   "Base image workflow": 12, Dependabot: 12,
   "Write it": 13,
@@ -97,11 +97,10 @@ const stepOf = (headers, stepsSeen) => {
 // Headers the model shortens to fit the tool's 12-character limit.
 const HEADER_ALIAS = { Workflow: "Base image workflow", "Base workflow": "Base image workflow", "Never merge": "Never automerge", "Pin images": "Pin base images", Branch: "Default branch" };
 // After these answers the reply may legitimately open with something other
-// than the next step header: a Branches answer may bring the how-to, a Merge gate
-// answer the required-checks guidance, Step 8
+// than the next step header: a Branches answer may bring the how-to, Step 8
 // ends with a closing line, Step 13 goes on with the write phase, a Settings
 // answer may bring an explanation, and Step 14 is the end.
-const NO_HEADER_AFTER_STEP = new Set([2, 8, 9, 13, 14]);
+const NO_HEADER_AFTER_STEP = new Set([2, 8, 13, 14]);
 const STOP_MESSAGE = "🛑 No `.tekton/` folder with Konflux markers";
 
 const git = (cwd, ...a) =>
@@ -288,17 +287,14 @@ async function runFixture(name) {
       if (!t.followUp) {
         // a follow-up may come right after its step's menu, with no screen of its own
         check(before.length > 0, `menu ${lbl} came with no text since the previous menu`);
-        if (t.step && t.headers[0] !== "Next" && t.headers[0] !== "Gate checks" && t.headers[0] !== "Rebasing" && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) { // the Next, Gate checks and Rebasing menus follow a how-to or a tip, not a screen
+        if (t.step && t.headers[0] !== "Next" && !(t.headers[0] === "Settings" && menus.filter((m) => m.headers[0] === "Settings").indexOf(t) > 0)) { // the Next menu follows a how-to, not a screen
           check(before.some((x) => x.includes(`### ▶️ Step ${t.step}/14`)), `menu ${lbl} came without the Step ${t.step}/14 screen before it`);
         }
       }
       const next = trace.slice(i + 1).find((x) => x.kind !== "tool");
       const nextMenu = trace.slice(i + 1).find((x) => x.kind === "menu");
       const followUpNext = nextMenu?.followUp; // a line introducing a follow-up is not a transition
-      if (t.headers[0] === "Batching" && next?.kind === "text") {
-        check(next.text.trimStart().startsWith("💡 By default, Renovate rebases"), "after the Batching answer the reply does not open with the rebasing tip");
-      }
-      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step ?? lastStep) && t.headers[0] !== "Settings" && t.headers[0] !== "Batching") { // the Batching answer is followed by the rebasing tip
+      if (next?.kind === "text" && !followUpNext && !NO_HEADER_AFTER_STEP.has(t.step ?? lastStep) && t.headers[0] !== "Settings") {
         check(/^### ▶️ Step \d+\/14/.test(next.text.trimStart()), `after the ${lbl} answer the reply does not open with the next step header`);
       }
     }

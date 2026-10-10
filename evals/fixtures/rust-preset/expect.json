@@ -21,13 +21,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
+      "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -99,12 +96,11 @@
     "tokio",
     "whitesource/merge-confidence",
     "\"tekton\"",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "{\"matchManagers\":[\"dockerfile\"],\"pinDigests\":true}",
     "\"groupName\": \"all non-major dependencies\"",
     "\"groupName\": null",
-    "\"rpmVulnerabilityAutomerge\": \"HIGH\""
+    "\"rpmVulnerabilityAutomerge\": \"HIGH\"",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -118,7 +114,9 @@
     "\"groupName\": \"Cargo dependencies\"",
     "\"rpm-lockfile\"",
     "\"ALL\"",
-    "refresh-rpm-lockfiles"
+    "refresh-rpm-lockfiles",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "textLacks": [
     "the reply opens with",

@@ -32,13 +32,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
+      "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -72,8 +69,6 @@
     "github.com/spf13/cobra",
     "golang.org/x/sync",
     "\"matchDepTypes\": [\"toolchain\"]",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
     "helpers:pinGitHubActionDigests",
     "pinDigests",
@@ -82,7 +77,8 @@
     "\"groupName\": null",
     "\"rpm-lockfile\": {\"automerge\": true}",
     "refresh-rpm-lockfiles -f \\\"$RENOVATE_POST_UPGRADE_COMMAND_DATA_FILE\\\"",
-    "\"fileFilters\": [\"**/rpms.lock.yaml\"]"
+    "\"fileFilters\": [\"**/rpms.lock.yaml\"]",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -91,7 +87,9 @@
     "{\"matchManagers\":[\"gomod\"],\"matchUpdateTypes\":[\"patch\",\"minor\"],\"automerge\":true}",
     "\"ignoreTests\": true",
     "rebaseWhen",
-    "rpmVulnerabilityAutomerge"
+    "rpmVulnerabilityAutomerge",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "answers": {
     "Scope": "Only packages I'll name"
