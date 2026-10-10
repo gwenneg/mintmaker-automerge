@@ -31,13 +31,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
+      "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -94,10 +91,9 @@
     "actions/setup-node",
     "\"tekton\"",
     "\"matchDepTypes\": [\"packageManager\", \"engines\"]",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigests",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "example/workflows",
@@ -107,7 +103,9 @@
     "io.quarkus",
     "groupName",
     "\"ignoreTests\": true",
-    "rebaseWhen"
+    "rebaseWhen",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "textLacks": [
     "the reply opens with",

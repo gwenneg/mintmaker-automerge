@@ -38,16 +38,10 @@
       "Pipeline"
     ],
     [
-      "Merge gate"
-    ],
-    [
       "Gate checks"
     ],
     [
       "Batching"
-    ],
-    [
-      "Rebasing"
     ],
     [
       "Settings"
@@ -87,11 +81,10 @@
     "\"matchUpdateTypes\": [\"major\"]",
     "\"schedule\": [\"* * * * 1-4\"]",
     "\"matchManagers\": [\"maven-wrapper\"]",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": true",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
     "\"groupName\": \"Maven dependencies\"",
-    "\"groupName\": null"
+    "\"groupName\": null",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "konflux-ci/mintmaker//config",
@@ -100,7 +93,9 @@
     "springframework",
     "\"at any time\"",
     "automergeSchedule",
-    "rebaseWhen"
+    "rebaseWhen",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "answers": {
     "Majors": {
@@ -113,8 +108,7 @@
       ]
     },
     "Merge days": "Monday to Thursday",
-    "Branches": "security-compliance",
-    "Merge gate": "Skip the checks"
+    "Branches": "security-compliance"
   },
   "followups": [
     {
@@ -128,7 +122,7 @@
     "Monday to Thursday",
     "Copy login command",
     "oc -n example-tenant annotate component/java-demo-sc mintmaker.appstudio.redhat.com/disabled=true",
-    "The required checks are now the whole gate"
+    "Currently required:"
   ],
   "textLacks": [
     "the reply opens with",

@@ -98,9 +98,9 @@ does not apply to the repository is skipped with one line.
 | 6. GitHub Actions | Whether to pin actions to commit SHAs, which actions may automerge, and whether any of them may have its majors automerged | Pin, allow the actions maintained by GitHub, no majors |
 | 7. Base images | Whether digest, patch and minor bumps of the `FROM` images automerge, whether to pin them to digests, and whether the RPM lockfile refreshes of a hermetic build automerge, with base image PRs refreshing the lockfile too | Yes to all three |
 | 8. Merge days | On which days PRs may open and merge, and whether Konflux pipeline updates follow those days or MintMaker's Saturday batch | Any day, pipeline updates on the same days |
-| 9. Merge gate | Whether Renovate merges only when every check on the PR passes, or skips the checks and leaves the gate to the required checks of the base branch | Keep the checks |
-| 10. Automerge throughput | How many PRs the automerged updates share, and whether an open PR is rebased whenever the base branch moves or only on conflict, after an explanation of why Renovate merges one PR per MintMaker run | One PR per ecosystem, rebase on every move |
-| 11. Konflux app bypass | The one GitHub setting every setup needs when the branch requires an approval: where to add the Konflux app as a bypass actor, and what the repository has today when `gh` is logged in | Read it, apply it yourself. Skipped when already in place |
+| 9. Required checks | The gate: GitHub merges a PR as soon as the required checks of the base branch pass, so which checks to require, and which never to, with what the repository has today when `gh` is logged in | Read it, apply it yourself |
+| 10. Automerge throughput | How many PRs the automerged updates share, after a note on what the branch's up-to-date rule means for the merges | One PR per ecosystem |
+| 11. Konflux app exemption | The one GitHub setting every setup needs when the branch requires an approval: the Konflux app as an Exempt bypass actor of the ruleset holding the pull request rule alone, "Allow auto-merge" on, and what the repository has today when `gh` is logged in | Read it, apply it yourself. Skipped when already in place |
 | 12. Other updaters | What happens to `dependabot.yml` and to a home-grown base-image workflow once Renovate covers the same ecosystem | Remove or narrow what overlaps |
 | 13. Summary | One table with the whole trust decision, then whether to write the files to your working tree | Write the files, nothing committed yet |
 | 14. Pull request | Whether to branch, commit, push and open the PR | Open the PR |
@@ -115,10 +115,9 @@ names in it:
 // Overrides MintMaker's global config: https://github.com/konflux-ci/mintmaker/blob/main/config/renovate/renovate.json
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  // GitHub auto-merge never completes when a bypass actor meets the approval rule.
-  // Renovate merges instead, on the first run where GitHub allows it.
-  "platformAutomerge": false,
-  "ignoreTests": false,
+  // GitHub merges each PR as soon as its required checks pass, once the Konflux app is
+  // exempt from the approval rule.
+  "platformAutomerge": true,
   "extends": [
     // Keep even when every action is pinned: it pins the next one added.
     "helpers:pinGitHubActionDigests"
@@ -198,9 +197,9 @@ sets or explains every one of them.
 | Update-type filter | `patch` and `minor` qualify by default, plus `digest` for base images. Majors stay manual unless you name the package | The generated rules |
 | Allow-list for GitHub Actions | Each action is vetted by name, and only an action pinned to a SHA with a full version in its comment can automerge safely: a release then arrives as a patch or minor PR, and a moved tag as a digest PR that never automerges | The generated rules, plus SHA pinning |
 | Manual-review list | Packages you name stay manual whatever the update type | Your answers |
-| Renovate's own merge | GitHub's auto-merge feature is off, since it never completes behind a bypass actor. Renovate merges on a later MintMaker run, and only when every check on the PR is green, or the required checks alone when you chose `ignoreTests` | The generated config |
-| Required status checks | Only when Renovate skips the checks: they are the whole gate then, and a check that is not required never holds a merge, red or not | You, in the branch ruleset |
-| Scoped bypass | The Konflux app skips the approval rule only, in "For pull requests only" mode. It still has to pass the required checks | You, in the branch ruleset |
+| GitHub's auto-merge | Renovate arms it on every PR that qualifies, and GitHub merges the PR as soon as the required checks of the base branch pass, minutes after they go green | The generated config |
+| Required status checks | The whole gate: a check that is not required never holds a merge, red or not. They live in a ruleset nobody bypasses, with "Block force pushes" | You, in the branch ruleset |
+| Scoped exemption | The Konflux app is an Exempt bypass actor of the ruleset holding the pull request rule and nothing else, the only bypass mode GitHub's auto-merge honors. It still has to pass the required checks | You, in the branch ruleset |
 
 Two exceptions to know:
 
@@ -215,16 +214,18 @@ Two exceptions to know:
 
 ## Once it is live
 
-- MintMaker runs every 4 hours, twice a day on busy Konflux clusters. A PR opens on one run, and Renovate merges
-  it on a later one, the first where GitHub allows the merge: hours after
-  the checks went green, not minutes.
+- MintMaker runs every 4 hours, twice a day on busy Konflux clusters. A
+  PR opens with GitHub's auto-merge armed, and GitHub merges it as soon as
+  the required checks of the base branch pass, minutes after they went
+  green. A PR behind the base branch waits for the next run to rebase it
+  when the branch rules require branches to be up to date.
 - A fresh release shows up once the release-age delay has passed, with a
   passing `renovate/stability-days` check. Nothing lists the updates being
   held, since MintMaker disables Renovate's dependency dashboard.
 - The PR body says `Automerge: Enabled` when the rules matched. When it
   is missing, the config did not match that update.
 - The first PR from the Konflux app that merges with passing checks and no
-  human approval confirms the bypass works.
+  human approval confirms the exemption works.
 - The new rules also apply to the PRs MintMaker already has open, so the
   first unattended merges will most likely be those.
 - When you chose to pin actions, an action referenced by a floating tag
@@ -239,27 +240,29 @@ Two exceptions to know:
 |---|---|---|
 | `Automerge: Enabled` is missing from a PR that should qualify | The rules did not match the update: wrong package or action name, or an update type outside `patch` and `minor` | Compare the name in the rule with the one in the PR title. The validator does not catch a name that matches nothing. |
 | An allow-listed action only ever gets "Update ... digest" PRs | Its version comment is a floating tag such as `# v4`, so Renovate keeps it and every release is a digest update | Merge the "Pin dependencies" PR, which writes the full version. A config written by an earlier version of the plugin lacks the `rangeStrategy: pin` rule: rerun the setup, or copy the rule from the example above. |
-| A qualifying PR sits open with green required checks | Renovate waits for every check on the PR, and a check that is not required, a vulnerability scan for instance, is red | Fix the finding, or rerun the setup and choose the required checks as the only gate, with care about which checks are required. |
-| A qualifying PR sits open with all checks green | The merge happens on a later MintMaker run, up to 4 hours after the checks passed, up to 12 on a busy cluster, or a commit from another author sits on the branch, which Renovate never merges on its own | Wait for the next run. Merge a PR someone else touched by hand. |
-| A PR shows auto-merge enabled by the Konflux app and never merges | `platformAutomerge` is still on in the config, and GitHub's auto-merge feature never completes behind a bypass actor | Rerun the setup, or set `"platformAutomerge": false` in the config. Renovate then merges the PR itself. |
+| A PR shows auto-merge enabled by the Konflux app and never merges | The base branch requires an approval and the Konflux app is not an Exempt bypass actor of that rule: GitHub's auto-merge ignores the "Always allow" and "For pull requests only" modes. Renovate merges the PR itself on a later run, when every check on it is green, so a red optional check holds it too | Set the app's bypass mode to Exempt on the ruleset holding the pull request rule, and only that rule. |
+| A PR merged with a red check | The required checks live in the same ruleset as the pull request rule, and an exempt actor skips every rule of its ruleset | Move "Require status checks to pass" and "Block force pushes" to a ruleset with no bypass actor. |
+| A PR sits open behind the base branch | The branch rules require branches to be up to date, so the PR waits for MintMaker's next run to rebase it, up to 4 hours, up to 12 on a busy cluster | Wait for the next run, or press "Update branch". |
 | A group PR stays red | One member of the group breaks the build or its lockfile update, and a group automerges only when every member is green | Give that package a rule of its own, `automerge: false` with `groupName: null`, until it builds. |
-| The base branch broke after two PRs merged in a row | The config rebases only on conflict, so each PR was tested against the base it was opened on, not against the other PR | Revert, then rerun the setup and keep the recommended rebasing, or add the `keep-updated` label to the PRs that must follow the base branch. |
-| A PR merged with no approval | That is the bypass working as designed | Check that the bypass is scoped to the approval rule and set to "For pull requests only". |
+| The base branch broke after two PRs merged in a row | GitHub merged each PR as tested against the base it was opened on, since the branch rules do not require branches to be up to date | Revert. Turn on "Require branches to be up to date before merging" if every merge must be retested, at the cost of one merge per MintMaker run and an "Update branch" on every human PR. |
+| A PR merged with no approval | That is the exemption working as designed | Check that the Konflux app is exempt from the ruleset holding the pull request rule alone, and from nothing else. |
 | Human PRs are stuck on a pending required check | A required check that does not run on every PR, such as the config validator workflow or `renovate/stability-days` | Remove it from the required checks. Only require checks that run on every PR. |
 | The validator workflow fails on the PR | A syntax or schema error in the config | Fix the file and push again. The workflow log names the line. |
 | MintMaker opens PRs against a branch that should get none | Konflux components build that branch, and the config on the default branch applies to it. A package rule cannot stop vulnerability fixes there, and `baseBranchPatterns` would make two jobs run on the default branch at once | Annotate every component that builds the branch with `mintmaker.appstudio.redhat.com/disabled=true`, as Step 2 shows on request, then close its open MintMaker PRs by hand. |
-| The check names in Step 9 don't match the PR | MintMaker has not opened a PR on this repository yet, so the names are derived from `.tekton/` | Verify the check names on the first MintMaker PR. The app to add to the bypass is always `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`. |
+| The check names in Step 9 don't match the PR | MintMaker has not opened a PR on this repository yet, so the names are derived from `.tekton/` | Verify the check names on the first MintMaker PR. The app to exempt is always `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`. |
 
 ## Design choices
 
 The blog post explains the reasoning behind the rules that are not
 obvious from the config:
 
-- [Why Renovate merges the PR itself](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#own-merge)
-  instead of GitHub's auto-merge feature, a GitHub bug with no fix as of
-  September 2026, reproduced on a
-  [public test repository](https://github.com/orgs/community/discussions/208718)
-  that also shows why a merge queue is no way around it.
+- Why the Konflux app must be an Exempt bypass actor, and nothing less:
+  GitHub's auto-merge ignores the "Always allow" and "For pull requests
+  only" modes, reproduced on a
+  [public test repository](https://github.com/orgs/community/discussions/208718),
+  and honors Exempt, measured on the same repository on 2026-10-08. The
+  [reference](skills/setup/references/github-branch-protection.md) has
+  every pull request and what it showed.
 - [Why actions get pinned to a SHA, and images to a digest](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#pinning).
 - [Why the Renovate config is not a shared preset](https://gwenneg.com/2026/09/21/let-the-routine-mintmaker-prs-merge-themselves.html#why-the-renovate-config-is-not-a-shared-preset):
   one self-contained file per repository, so the decision stays with the
