@@ -27,17 +27,14 @@
       "Pin base images"
     ],
     [
+      "Grouping"
+    ],
+    [
       "Merge days",
       "Pipeline"
     ],
     [
-      "Merge gate"
-    ],
-    [
-      "Batching"
-    ],
-    [
-      "Rebasing"
+      "Gate checks"
     ],
     [
       "Settings"
@@ -55,7 +52,7 @@
     "Ship it": "Commit on a branch",
     "Allow-list": "Actions maintained by GitHub",
     "Toolchains": "Automerge patch and minor",
-    "Batching": "One PR per update"
+    "Grouping": "One PR per update"
   },
   "followups": [
     {
@@ -94,10 +91,9 @@
     "actions/setup-node",
     "\"tekton\"",
     "\"matchDepTypes\": [\"packageManager\", \"engines\"]",
-    "\"platformAutomerge\": false",
-    "\"ignoreTests\": false",
     "{\"matchManagers\":[\"github-actions\"],\"matchDepTypes\":[\"action\"],\"rangeStrategy\":\"pin\"}",
-    "helpers:pinGitHubActionDigests"
+    "helpers:pinGitHubActionDigests",
+    "\"platformAutomerge\": true"
   ],
   "configLacks": [
     "example/workflows",
@@ -107,7 +103,9 @@
     "io.quarkus",
     "groupName",
     "\"ignoreTests\": true",
-    "rebaseWhen"
+    "rebaseWhen",
+    "ignoreTests",
+    "keepUpdatedLabel"
   ],
   "textLacks": [
     "the reply opens with",
