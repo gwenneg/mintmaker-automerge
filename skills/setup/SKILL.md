@@ -341,7 +341,7 @@ Columns: updater, what it covers, status.
 💡 Removing `dependabot.yml` stops Dependabot's update PRs, not Dependabot alerts, which are a separate GitHub setting. Keep the alerts on: MintMaker's vulnerability fix PRs are built from them.
 
 Header "Base image workflow", only when a workflow row overlaps: Remove it, Renovate covers this now (Recommended) / Keep it, two updaters on the same FROM line.
-Header "Dependabot", only when `dependabot.yml` exists: every entry overlapping, Remove `dependabot.yml` (Recommended) / Keep it, two PRs per bump; some entries not overlapping, Narrow it to the entries Renovate doesn't cover (Recommended) / Remove it entirely / Keep it.
+Header "Dependabot", only when `dependabot.yml` exists: no ✅ row, Remove `dependabot.yml` (Recommended) / Keep it, two PRs per bump; some ✅ rows, Narrow it to the entries Renovate doesn't cover (Recommended) / Remove it entirely / Keep it. Narrowing keeps only the ✅ rows: a ⚠️ directory missing entry is dropped too, whatever its overlap.
 Next to the Remove option: this removes Dependabot version updates only; the Dependabot alerts setting under Settings, Advanced Security stays on, because Renovate's vulnerability fix PRs are built from those alerts.
 
 The answers are applied in Step 13, after "Write it", never here.
@@ -665,7 +665,7 @@ After the "Write the files" answer, and only then, the write phase, in this orde
    When migrating an existing config, list what you removed or restructured and why, so a rewrite never quietly drops a rule the user still wants.
    A rule holding `matchConfidence` goes whole, since without its matcher it would apply to more than it was written for; a rule left with nothing but matchers once a ⚠️ key is gone goes too.
    Then run the report's `check_comments` script as `<check_comments> <config file>`, here and never earlier; there is nothing to read in it first. It prints every comment that is not a template word for word, with its line number: replace each with its block's comment, drop it when the block has none, or, when it belongs to a setting kept from the existing config, write that setting's marker line above it. Run it again until it prints nothing.
-2. Apply the Step 12 decisions: remove or narrow `dependabot.yml`, remove the base-image workflow, and update any doc that describes what they covered.
+2. Apply the Step 12 decisions: remove `dependabot.yml` or narrow it to its ✅ rows, remove the base-image workflow, and update any doc that describes what they covered.
    Files those tools wrote, such as a digest tracking file, go with the workflow that wrote them; say so in one line.
 3. Check the names.
    The validator workflow below checks syntax and schema only: a misspelled package or action name passes and silently matches nothing.
