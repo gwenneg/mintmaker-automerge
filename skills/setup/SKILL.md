@@ -70,7 +70,7 @@ This plugin turns on automerge for the dependency updates you decide are low-ris
 
 How this works:
 - Fourteen short steps, a few quick decisions along the way, about twenty minutes end to end.
-- Two GitHub settings make unattended merges possible: the required checks (Step 10) and the Konflux app exemption (Step 11). This skill checks and explains them, with links, but never changes them: applying them is yours to do, and takes the Admin role on the repository.
+- Three GitHub settings make unattended merges possible: the required checks (Step 10), the Konflux app exemption and "Allow auto-merge" (Step 11). This skill checks and explains them, with links, but never changes them: applying them is yours to do, and takes the Admin role on the repository.
 - The config is written on disk only after you approve the summary, in Step 13.
 - The PR is opened only after you approve it, in Step 14.
 ```
@@ -285,37 +285,41 @@ On the second, explain from `references/github-branch-protection.md` in a few li
 The answer is an acknowledgement, recorded in the PR body: the skill verifies nothing, and which checks to require is the user's decision.
 The reply to it opens with the Step 11 screen, the Konflux app exemption, or its Skipped line and the Step 12 screen.
 
-## Step 11: Konflux app exemption
+## Step 11: Konflux app exemption and auto-merge
 
-One screen, from this file, no tool call, then one menu when there is something to apply: the Konflux app exemption, the one GitHub setting without which no unattended merge happens on a branch that requires an approval.
+One screen, from this file, no tool call, then one menu when there is something to apply: the Konflux app exemption, needed on a branch that requires an approval, and "Allow auto-merge", needed on every repo with no exception, approval-gated branch or not, since without it Renovate can never arm an unattended merge.
 The `<...>` placeholders come from the report: `github_role` in the Tooling section, the URLs in the Links section, and the `status_bypass` and `status_auto_merge` verdicts of the Step 11 status section, printed verbatim where the screen names them, ✅ or ⚠️ included; `not checked` where the report says so.
 The organization link is left out when the report has `settings_org_rulesets: none`.
-The first paragraph follows the two verdicts, one form each, the emoji dropped:
-- `status_bypass` opens with ⚠️: `<status_bypass>. Without it, no MintMaker PR ever merges unattended: GitHub's auto-merge ignores a bypass actor in any other mode, and only an exempt actor is never asked for an approval.`
-- `status_bypass` reads `not checked`: `The exemption could not be checked (<the reason from the verdict>). When \`<default_branch>\` requires an approval, no MintMaker PR ever merges unattended until the Konflux app is exempt from that rule.`
-- `status_bypass` opens with ✅: `<status_bypass>.` alone, the exemption side being settled; the 💡 note, the numbered list and the classic rules line below are then left out, and the screen goes on with the "Allow auto-merge" line.
-- `status_auto_merge` opens with ⚠️, as a second sentence of that paragraph: `"Allow auto-merge" is off in the repository settings, and Renovate needs it to arm each merge: without it, Renovate merges on its own, on a later run and only once every check on the PR is green, required or not.`
-- `status_auto_merge` reads `not checked`, as a second sentence: `Whether "Allow auto-merge" is on could not be checked (<the reason from the verdict>), and Renovate needs it to arm each merge.`
-The full screen and its menu print unless both verdicts open with ✅. A verdict that reads `not checked` is not ✅: the rules could not be read, so the screen prints with its first sentence in the not-checked form, and the user is asked. Only two ✅ verdicts skip the step like any moot step: the report's Skipped steps block for Step 11, which carries the verdicts as the report gives them, never a verdict written by you, then the Step 12 screen in the same reply, no question.
+The exemption block is `status_bypass`, its own emoji dropped and a fresh one put back at the very front, as plain statements, no labels, the required action folded into the second sentence:
+- opens with ⚠️: `⚠️ <status_bypass>. Add it to that ruleset's bypass list, bypass mode Exempt.`
+- reads `not checked`: `⚠️ The exemption could not be checked (<the reason from the verdict>). Make Red Hat Konflux exempt from the pull request rule, if \`<default_branch>\` requires an approval.`
+- opens with ✅: `<status_bypass>.` alone, its own ✅ kept, the exemption side being settled; the 💡 note and the numbered "where to add" list below are then left out, since there is nothing left to apply for the exemption.
+Why it matters is folded into the 💡 note, not stated again in the block.
+The auto-merge block comes last, after the "where to add" list, never before the exemption block: `status_auto_merge`, its own emoji dropped and a fresh one put back the same way, as plain statements about this repository, nothing said about any other, the required action and the reason folded into the second sentence:
+- opens with ⚠️: `⚠️ "Allow auto-merge" is off in this repository's settings: <settings_repo>. Turn it on: Renovate needs it to arm each merge.`
+- reads `not checked`: `⚠️ Whether "Allow auto-merge" is on could not be checked (<the reason from the verdict>): <settings_repo>. Turn it on: Renovate needs it to arm each merge.`
+- opens with ✅: `<status_auto_merge>.` alone, its own ✅ kept.
+The full screen and its menu print unless both verdicts open with ✅. A verdict that reads `not checked` is not ✅: the rules could not be read, so its block prints in the not-checked form, and the user is asked. Only two ✅ verdicts skip the step like any moot step: the report's Skipped steps block for Step 11, which carries the verdicts as the report gives them, never a verdict written by you, then the Step 12 screen in the same reply, no question.
 Each line that names a place ends with its URL, so the terminal makes it clickable; with no GitHub remote the report has none, and the words stand alone.
 `references/github-branch-protection.md` is the long form for "why?" questions, not to paraphrase into the screen.
 
 The full screen:
 
 ```
-### ▶️ Step 11/14 Konflux app exemption
+### ▶️ Step 11/14 Konflux app exemption and auto-merge
 
-<the first paragraph, in the forms above>
+<the exemption block, in the forms above>
 
-💡 An exempt actor skips every rule of its ruleset, and nothing is logged as a bypass. So keep "Require a pull request before merging" in a ruleset of its own, and the required checks and "Block force pushes" in a ruleset nobody bypasses: in one ruleset, the app could merge a PR with a red check or force-push the branch.
+💡 Only an Exempt actor is never asked for an approval: GitHub's auto-merge ignores a bypass actor in any other mode, so without it no MintMaker PR ever merges unattended. It also skips every rule of its ruleset, and nothing is logged as a bypass, so keep "Require a pull request before merging" in a ruleset of its own, and the required checks and "Block force pushes" in a ruleset nobody bypasses. Otherwise, the app could merge a PR with a red check or force-push the branch.
 
 Where to add `Red Hat Konflux`, the GitHub App owned by `redhat-appstudio`, with the bypass mode Exempt:
 1. Organization ruleset (recommended), by an organization owner: covers every Konflux repository at once: <settings_org_rulesets, when the report has one>
 2. Repository ruleset, Admin role (yours: <github_role>): add the app to the bypass list of the ruleset holding the pull request rule, and only that rule: <settings_ruleset_approval, or settings_rulesets when the report has none>
 Classic branch protection rules have no Exempt mode: a branch on them moves to rulesets first: <settings_branches>
-"Allow auto-merge" in the repository settings, which Renovate needs to arm the merge: <status_auto_merge>: <settings_repo>
 
-This skill never touches GitHub settings, by design: applying the exemption is yours to do.
+<the auto-merge block, in the forms above>
+
+This skill never touches GitHub settings, by design: applying these settings is yours to do.
 ```
 
 The skipped form, when both verdicts open with ✅, is the report's Skipped steps block for Step 11, verbatim.
@@ -725,28 +729,18 @@ Nothing leaves the machine before that answer.
 Open the PR by the GitHub route available: `gh pr create`, `POST /repos/<github_repo>/pulls` with a token, or push the branch and give the link `https://github.com/<github_repo>/pull/new/<branch>` with the title and body to paste.
 When the report says `fork: yes`, the branch is pushed to `origin`, the fork, and the PR opened on `<github_repo>` with the head `<origin owner>:<branch>`: `gh pr create --repo <github_repo> --head <origin owner>:<branch>`, the same `head` in the `POST` body, or the link `https://github.com/<github_repo>/compare/<default_branch>...<origin owner>:<branch>?expand=1`.
 
-The PR body carries the GitHub settings acknowledged during the run as a checklist: the required checks of Step 10 and the exemption of Step 11.
+Title and opening paragraph scope to what this run changes, not a fixed phrase: a first run, no marker in the config beforehand, is titled as a setup, e.g. `feat: set up MintMaker automerge`, and opens with the paragraph below; a later run, marker already there, is titled after the Step 13 diff instead, e.g. `fix: drop <package> from the never-automerge list`, and opens with this line instead of that paragraph: `This PR updates the MintMaker automerge rules already in place: <what changed, one line>.`
+
+    Automerge starts when this PR merges. Renovate arms GitHub's auto-merge on every PR that qualifies, and GitHub merges it as soon as the required checks of the base branch pass, with no approval. The plugin changes no GitHub setting: the branch rules behind automerge are applied by hand. During the setup, the author acknowledged the settings below, what they do and that they are theirs to apply:
+
+Either way, the checklist of GitHub settings acknowledged during the run follows: the required checks of Step 10 and the exemption of Step 11.
 A tick records that the user read, understood and took on the setting, nothing more, so a reviewer checks the gate instead of trusting it:
 
-    Automerge starts when this PR merges. Renovate arms GitHub's
-    auto-merge on every PR that qualifies, and GitHub merges it as soon
-    as the required checks of the base branch pass, with no approval.
-    The plugin changes no GitHub setting: the branch rules behind
-    automerge are applied by hand. During the setup, the author
-    acknowledged the settings below, what they do and that they are
-    theirs to apply:
-    - [x] Required status checks on the base branch, the whole gate,
-          in a ruleset nobody bypasses: read, understood, to be set
-          before this PR merges
-    - [x] Konflux app exemption: Red Hat Konflux as an Exempt bypass
-          actor of the ruleset holding the pull request rule and
-          nothing else, "Block force pushes" in the checks ruleset,
-          "Allow auto-merge" on: read, understood, to be set if the
-          base branch requires approvals
+    - [x] Required status checks on the base branch, the whole gate, in a ruleset nobody bypasses: read, understood, to be set before this PR merges
+    - [x] Konflux app exemption: Red Hat Konflux as an Exempt bypass actor of the ruleset holding the pull request rule and nothing else, "Block force pushes" in the checks ruleset: read, understood, to be set if the base branch requires approvals
+    - [x] "Allow auto-merge" on in the repository settings, which Renovate needs to arm every merge: read, understood, to be set
 
-    The ticks record that acknowledgement, not a verified state.
-    Reviewer: check the settings before merging, and make sure the
-    required checks are the ones that prove a change is good.
+    The ticks record that acknowledgement, not a verified state. Reviewer: check the settings before merging, and make sure the required checks are the ones that prove a change is good.
 
 A setting whose verdicts opened with ✅ was not asked about: its item ends with `already in place` instead of the `read, understood, to be ...` clause.
 A box stays unticked when its step ended without the "I read it" answer, and the body names what is still open.
